@@ -23,9 +23,29 @@ Arguments::Arguments(int argc, char** argv) {
             std::cout << "File '" << argv[i] << "' does not exist!" << std::endl;
             std::exit(-1);
           }
-          else output = argv[i];
+          else {
+            if (input != "") output = argv[i];
+            else {
+              std::cout << "Please specify an input file!" << std::endl;
+              std::exit(-1);
+            }
+          }
         }
       }
     }
+  }
+}
+
+Nuclear::Nuclear(Arguments* args) { 
+  this->args = args;
+  std::string data = "";
+  std::ifstream file(args->getInput());
+  if (file.is_open()) {
+    std::string line;
+    while (std::getline(file, line)) data += line + "\n";
+    file.close();
+  } else {
+    std::cout << "Could not open file '" << args->getInput() << "'!" << std::endl;
+    std::exit(-1);
   }
 }

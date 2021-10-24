@@ -1,5 +1,5 @@
-#ifndef Nuclear
-#define Nuclear
+#ifndef Nuclear_hpp
+#define Nuclear_hpp
 
 #define Version 0.1
 
@@ -8,6 +8,7 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <variant>
 
 class Arguments {
   public:
@@ -20,4 +21,12 @@ class Arguments {
     std::string output, input;
 };
 
-#endif
+class Nuclear {
+  public:
+    Nuclear(Arguments* args);
+  private:
+    Arguments* args;
+    std::vector<std::variant<int, float, double, std::string>> tokens;
+};
+
+#endif // Nuclear_hpp
