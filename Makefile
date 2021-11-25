@@ -6,10 +6,10 @@ Directories = $(wildcard Source/*)
 
 Build/%.o: Source/%.cpp
 	@-mkdir -p $(@D)
-	@-g++ -c $^ -o $@
+	@-g++ -c $^ -std=c++2a -o $@
 
 Nuclear: $(Objects)
-	@g++ $(Objects) -o Nuclear
+	@g++ $(Objects) -std=c++2a -o Nuclear
 
 run:
 	@./Nuclear test.nuke Nuked
