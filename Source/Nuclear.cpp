@@ -215,7 +215,7 @@ Nuclear::Nuclear(Arguments* args) {
         || toks == "u" || toks == "v" || toks == "w" || toks == "x" || toks == "y" || toks == "z" || toks == "A" || toks == "B" || toks == "C" || toks == "D"
         || toks == "E" || toks == "F" || toks == "G" || toks == "H" || toks == "I" || toks == "J" || toks == "K" || toks == "L" || toks == "M" || toks == "N"
         || toks == "O" || toks == "P" || toks == "Q" || toks == "R" || toks == "S" || toks == "T" || toks == "U" || toks == "V" || toks == "W" || toks == "X"
-        || toks == "Y" || toks == "Z" || toks == "~") {
+        || toks == "Y" || toks == "Z" || toks == "@") {
           IsInName = true;
           name+=toks;
           toks = "";
