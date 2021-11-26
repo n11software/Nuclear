@@ -1,4 +1,4 @@
-print('\"H\'ello, W\\o\\r\\\\\\r\nld!')
+print("Hello, world!")
 function(arg, arg0, arg1) {
 
 }

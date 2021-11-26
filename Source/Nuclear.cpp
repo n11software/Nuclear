@@ -76,14 +76,16 @@ Nuclear::Nuclear(Arguments* args) {
         } else {
           quote += c;
         }
-      } else if (c == '\"' || c == '\'') {
+      } else if (c == '\"' || c == '\'' || c == '`') {
         if (IsEscaped == 1) {
           quote+=c;
           IsEscaped = 0;
-        } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'')) {
+        } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
           quote+='"';
           IsInQuotes = false;
           tokens.push_back(quote);
+        } else {
+          quote+=c;
         }
       } else quote+=c;
     } else {
@@ -100,7 +102,7 @@ Nuclear::Nuclear(Arguments* args) {
         tokens.push_back("\n");
       } else if (toks == ";") {
         tokens.push_back(";");
-      } else if (toks == "\"" || toks == "'") {
+      } else if (toks == "\"" || toks == "'" || toks == "`") {
         IsInQuotes = true;
         QuoteInitiator = toks[0];
         quote = "\"";
