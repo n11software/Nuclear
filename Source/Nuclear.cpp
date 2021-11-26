@@ -229,7 +229,7 @@ Nuclear::Nuclear(Arguments* args) {
           IsInOperator = true;
           op+=toks;
           toks = "";
-        } else if (toks == "+" || toks == "-" || toks == "*" || toks == "/" || toks == "%") {
+        } else if (toks == "+" || toks == "-" || toks == "*" || toks == "/" || toks == "%" || toks == "^") {
           IsInMathematicalOperator = true;
           mathop+=toks;
           toks = "";

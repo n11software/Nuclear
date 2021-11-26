@@ -1,13 +1,1 @@
-// The world shouldn't see this comment!
-/*
- *  test.nuke - Null
- */
-
-a = 1
-
-print("Welcome to Nuclear")
-print("If all goes well, then nothing should!")
-print("You should recieve an error after this line!")
-if (!!a) {
-  print("How did you get past this error!!??!?!??!")
-}
+a=1^99
