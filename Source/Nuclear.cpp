@@ -58,6 +58,8 @@ Nuclear::Nuclear(Arguments* args) {
   int IsEscaped = 0;
   bool IsInInt = false;
   std::string number = "";
+  bool IsInName = false;
+  std::string name = "";
   for (char& c : data) {
     if (IsInQuotes) {
       if (c == '\\') {
@@ -101,21 +103,38 @@ Nuclear::Nuclear(Arguments* args) {
           number += c;
           IsContinued = false;
         }
+      } else if (IsInName) {
+        if (c != 'a' && c != 'b' && c != 'c' && c != 'd' && c != 'e' && c != 'f' && c != 'g' && c != 'h' && c != 'i' && c != 'j'
+        && c != 'k' && c != 'l' && c != 'm' && c != 'n' && c != 'o' && c != 'p' && c != 'q' && c != 'r' && c != 's' && c != 't'
+        && c != 'u' && c != 'v' && c != 'w' && c != 'x' && c != 'y' && c != 'z' && c != 'A' && c != 'B' && c != 'C' && c != 'D'
+        && c != 'E' && c != 'F' && c != 'G' && c != 'H' && c != 'I' && c != 'J' && c != 'K' && c != 'L' && c != 'M' && c != 'N'
+        && c != 'O' && c != 'P' && c != 'Q' && c != 'R' && c != 'S' && c != 'T' && c != 'U' && c != 'V' && c != 'W' && c != 'X'
+        && c != 'Y' && c != 'Z' && c != '0' && c != '1' && c != '2' && c != '3' && c != '4' && c != '5' && c != '6' && c != '7'
+        && c != '8' && c != '9' && c != '.') {
+          tokens.push_back(name);
+          name = "";
+          IsInName = false;
+        } else {
+          name += c;
+          IsContinued = false;
+        }
       }
       if (IsContinued) {
         toks+=c;
-        if (toks == "print") {
-          tokens.push_back(toks);
-          toks = "";
-        } else if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
+        if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
           tokens.push_back(toks);
           toks = "";
         } else if (toks == " ") {
           toks = "";
         } else if (toks == "\n") {
           tokens.push_back("\n");
+          toks = "";
         } else if (toks == ";") {
           tokens.push_back(";");
+          toks = "";
+        } else if (toks == ",") {
+          tokens.push_back(",");
+          toks = "";
         } else if (toks == "\"" || toks == "'" || toks == "`") {
           IsInQuotes = true;
           QuoteInitiator = toks[0];
@@ -124,6 +143,15 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (toks == "0" || toks == "1" || toks == "2" || toks == "3" || toks == "4" || toks == "5" || toks == "6" || toks == "7" || toks == "8" || toks == "9") {
           IsInInt = true;
           number+=toks;
+          toks = "";
+        } else if (toks == "a" || toks == "b" || toks == "c" || toks == "d" || toks == "e" || toks == "f" || toks == "g" || toks == "h" || toks == "i" || toks == "j"
+        || toks == "k" || toks == "l" || toks == "m" || toks == "n" || toks == "o" || toks == "p" || toks == "q" || toks == "r" || toks == "s" || toks == "t"
+        || toks == "u" || toks == "v" || toks == "w" || toks == "x" || toks == "y" || toks == "z" || toks == "A" || toks == "B" || toks == "C" || toks == "D"
+        || toks == "E" || toks == "F" || toks == "G" || toks == "H" || toks == "I" || toks == "J" || toks == "K" || toks == "L" || toks == "M" || toks == "N"
+        || toks == "O" || toks == "P" || toks == "Q" || toks == "R" || toks == "S" || toks == "T" || toks == "U" || toks == "V" || toks == "W" || toks == "X"
+        || toks == "Y" || toks == "Z") {
+          IsInName = true;
+          name+=toks;
           toks = "";
         }
       }

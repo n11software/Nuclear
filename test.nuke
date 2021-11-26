@@ -1,1 +1,2 @@
-print(1925.00)
+print(input) { input }
+print("Hello, world!")
