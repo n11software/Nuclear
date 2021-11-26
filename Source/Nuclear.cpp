@@ -67,8 +67,12 @@ Nuclear::Nuclear(Arguments* args) {
   std::string op = "";
   bool IsInMathematicalOperator = false;
   std::string mathop = "";
+
+  int line = 1, col = 1, index = 1;
+
   for (char& c : data) {
     if (IsInQuotes) {
+      toks+=c;
       if (c == '\\') {
         IsEscaped++;
         if (IsEscaped == 2) {
@@ -94,6 +98,8 @@ Nuclear::Nuclear(Arguments* args) {
         } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
           quote+='"';
           IsInQuotes = false;
+          QuoteInitiator = '\0';
+          toks = "";
           tokens.push_back(quote);
         } else {
           quote+=c;
@@ -128,18 +134,28 @@ Nuclear::Nuclear(Arguments* args) {
       } else if (IsInMLComment) {
         if (c == '*') MLCommentEnd = true;
         else if (c != '/') MLCommentEnd = false;
+        if (c == '\n') {
+          line++;
+          col=0;
+        }
         if (MLCommentEnd && c == '/') {
           IsInMLComment = false;
           MLCommentEnd = false;
         }
         IsContinued = false;
       } else if (IsInComment) {
-        if (c == '\n') IsInComment = false;
+        if (c == '\n') {
+          line++;
+          col=0;
+          IsInComment = false;
+        }
         IsContinued = false;
       } else if (IsInOperator) {
         if (c != '=' && c != '!' && c != '<' && c != '>' && c != '|' && c != '&') {
-          if (!(op == "==" || op == "!=" || op == "!" || op == "!!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) {
+          if (!(op == "==" || op == "!=" || op == "!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) {
             std::cout << "Invalid operator '" << op << "'!" << std::endl;
+            col-=op.length();
+            std::cout << "At line " << line << ", col " << col << std::endl;
             exit(1);
           }
           tokens.push_back(op);
@@ -151,7 +167,7 @@ Nuclear::Nuclear(Arguments* args) {
         }
       } else if (IsInMathematicalOperator) {
         mathop+=c;
-        if (mathop == "//") {
+        if (mathop == "//" || mathop == "/*") {
           IsInMathematicalOperator = false;
           toks+="/";
           IsContinued = true;
@@ -175,6 +191,8 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (toks == " ") {
           toks = "";
         } else if (toks == "\n") {
+          line++;
+          col = 0;
           tokens.push_back("\n");
           toks = "";
         } else if (toks == ";") {
@@ -220,6 +238,18 @@ Nuclear::Nuclear(Arguments* args) {
     }
     PreviousChar = c;
     std::cout << toks << std::endl;
+    col++;
+    index++;
+  }
+
+  if (QuoteInitiator != '\0') {
+    std::cout << "Unterminated string at line " << line << ", col " << col-toks.length()-1 << "!" << std::endl;
+    exit(1);
+  }
+  if (toks.length() > 0) {
+    std::cout << "Invalid token '" << toks.substr(0, toks.length() <= 8 ? toks.length()-1 : 8) << "'!" << std::endl;
+    std::cout << "At line " << line << ", col " << col-toks.length() << std::endl;
+    exit(1);
   }
 
   int i=0;
