@@ -60,6 +60,9 @@ Nuclear::Nuclear(Arguments* args) {
   std::string number = "";
   bool IsInName = false;
   std::string name = "";
+  bool IsInMLComment = false;
+  bool MLCommentEnd = false;
+  bool IsInComment = false;
   for (char& c : data) {
     if (IsInQuotes) {
       if (c == '\\') {
@@ -118,6 +121,17 @@ Nuclear::Nuclear(Arguments* args) {
           name += c;
           IsContinued = false;
         }
+      } else if (IsInMLComment) {
+        if (c == '*') MLCommentEnd = true;
+        else if (c != '/') MLCommentEnd = false;
+        if (MLCommentEnd && c == '/') {
+          IsInMLComment = false;
+          MLCommentEnd = false;
+        }
+        IsContinued = false;
+      } else if (IsInComment) {
+        if (c == '\n') IsInComment = false;
+        IsContinued = false;
       }
       if (IsContinued) {
         toks+=c;
@@ -152,6 +166,12 @@ Nuclear::Nuclear(Arguments* args) {
         || toks == "Y" || toks == "Z") {
           IsInName = true;
           name+=toks;
+          toks = "";
+        } else if (toks == "/*") {
+          IsInMLComment = true;
+          toks = "";
+        } else if (toks == "//" || toks == "#") {
+          IsInComment = true;
           toks = "";
         }
       }

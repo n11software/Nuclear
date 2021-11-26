@@ -1,2 +1,6 @@
-print(input) { input }
-print("Hello, world!")
+/*
+ *  test.nuke - Null
+ */
+// Hello, this is not visible
+# Or this one
+print("Hello, world")
