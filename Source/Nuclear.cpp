@@ -233,6 +233,9 @@ Nuclear::Nuclear(Arguments* args) {
           IsInMathematicalOperator = true;
           mathop+=toks;
           toks = "";
+        } else if (toks == "[" || toks == "]") {
+          tokens.push_back(toks);
+          toks = "";
         }
       }
     }
