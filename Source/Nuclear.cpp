@@ -63,6 +63,8 @@ Nuclear::Nuclear(Arguments* args) {
   bool IsInMLComment = false;
   bool MLCommentEnd = false;
   bool IsInComment = false;
+  bool IsInOperator = false;
+  std::string op = "";
   for (char& c : data) {
     if (IsInQuotes) {
       if (c == '\\') {
@@ -132,6 +134,19 @@ Nuclear::Nuclear(Arguments* args) {
       } else if (IsInComment) {
         if (c == '\n') IsInComment = false;
         IsContinued = false;
+      } else if (IsInOperator) {
+        if (c != '=' && c != '!' && c != '<' && c != '>' && c != '|' && c != '&') {
+          if (!(op == "==" || op == "!=" || op == "!" || op == "!!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) {
+            std::cout << "Invalid operator '" << op << "'!" << std::endl;
+            exit(1);
+          }
+          tokens.push_back(op);
+          op = "";
+          IsInOperator = false;
+        } else {
+          op += c;
+          IsContinued = false;
+        }
       }
       if (IsContinued) {
         toks+=c;
@@ -163,7 +178,7 @@ Nuclear::Nuclear(Arguments* args) {
         || toks == "u" || toks == "v" || toks == "w" || toks == "x" || toks == "y" || toks == "z" || toks == "A" || toks == "B" || toks == "C" || toks == "D"
         || toks == "E" || toks == "F" || toks == "G" || toks == "H" || toks == "I" || toks == "J" || toks == "K" || toks == "L" || toks == "M" || toks == "N"
         || toks == "O" || toks == "P" || toks == "Q" || toks == "R" || toks == "S" || toks == "T" || toks == "U" || toks == "V" || toks == "W" || toks == "X"
-        || toks == "Y" || toks == "Z") {
+        || toks == "Y" || toks == "Z" || toks == "^") {
           IsInName = true;
           name+=toks;
           toks = "";
@@ -172,6 +187,10 @@ Nuclear::Nuclear(Arguments* args) {
           toks = "";
         } else if (toks == "//" || toks == "#") {
           IsInComment = true;
+          toks = "";
+        } else if (toks == "=" || toks == "!" || toks == "<" || toks == ">" || toks == "|" || toks == "&") {
+          IsInOperator = true;
+          op+=toks;
           toks = "";
         }
       }
