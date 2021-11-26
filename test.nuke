@@ -1,4 +1,1 @@
-print("Hello, world!")
-function(arg, arg0, arg1) {
-
-}
+print(1925.00)

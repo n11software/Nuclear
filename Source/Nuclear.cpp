@@ -55,7 +55,9 @@ Nuclear::Nuclear(Arguments* args) {
   bool IsInQuotes = false;
   std::string quote = "";
   char QuoteInitiator = '\0';
-  int IsEscaped = 0; 
+  int IsEscaped = 0;
+  bool IsInInt = false;
+  std::string number = "";
   for (char& c : data) {
     if (IsInQuotes) {
       if (c == '\\') {
@@ -89,24 +91,41 @@ Nuclear::Nuclear(Arguments* args) {
         }
       } else quote+=c;
     } else {
-      toks+=c;
-      if (toks == "print") {
-        tokens.push_back(toks);
-        toks = "";
-      } else if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
-        tokens.push_back(toks);
-        toks = "";
-      } else if (toks == " ") {
-        toks = "";
-      } else if (toks == "\n") {
-        tokens.push_back("\n");
-      } else if (toks == ";") {
-        tokens.push_back(";");
-      } else if (toks == "\"" || toks == "'" || toks == "`") {
-        IsInQuotes = true;
-        QuoteInitiator = toks[0];
-        quote = "\"";
-        toks = "";
+      bool IsContinued = true;
+      if (IsInInt) {
+        if (c != '0' && c != '1' && c != '2' && c != '3' && c != '4' && c != '5' && c != '6' && c != '7' && c != '8' && c != '9' && c != '.') {
+          tokens.push_back(number);
+          number = "";
+          IsInInt = false;
+        } else {
+          number += c;
+          IsContinued = false;
+        }
+      }
+      if (IsContinued) {
+        toks+=c;
+        if (toks == "print") {
+          tokens.push_back(toks);
+          toks = "";
+        } else if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
+          tokens.push_back(toks);
+          toks = "";
+        } else if (toks == " ") {
+          toks = "";
+        } else if (toks == "\n") {
+          tokens.push_back("\n");
+        } else if (toks == ";") {
+          tokens.push_back(";");
+        } else if (toks == "\"" || toks == "'" || toks == "`") {
+          IsInQuotes = true;
+          QuoteInitiator = toks[0];
+          quote = "\"";
+          toks = "";
+        } else if (toks == "0" || toks == "1" || toks == "2" || toks == "3" || toks == "4" || toks == "5" || toks == "6" || toks == "7" || toks == "8" || toks == "9") {
+          IsInInt = true;
+          number+=toks;
+          toks = "";
+        }
       }
     }
     PreviousChar = c;
