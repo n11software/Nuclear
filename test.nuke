@@ -1,1 +1,25 @@
-a=1^99
+/*
+ *  test.nuke - Null
+ */
+
+# Including a file will just import the entire file.
+include "files"
+
+setAsArray(@in) {
+  in = [in]
+}
+
+a = 0
+a = "Hello, World!";
+b = 2.50343245
+b = true
+setAsArray(a)
+a.append(b)
+
+main {
+  // This function automatically will run on start
+  if (b) {
+    print(a)
+    return a
+  } else return {"Error!", false}
+}

@@ -247,7 +247,13 @@ Nuclear::Nuclear(Arguments* args) {
     exit(1);
   }
   if (toks.length() > 0) {
-    std::cout << "Invalid token '" << toks.substr(0, toks.length() <= 8 ? toks.length()-1 : 8) << "'!" << std::endl;
+    std::string error = toks.substr(0, 8);
+    size_t pos = error.find("\n");
+    while( pos != std::string::npos) {
+        error.replace(pos, 2, "");
+        pos = error.find("\n", pos);
+    }
+    std::cout << "Invalid token '" << toks.substr(0, 1) << "' in '" << error << "'!" << std::endl;
     std::cout << "At line " << line << ", col " << col-toks.length() << std::endl;
     exit(1);
   }
