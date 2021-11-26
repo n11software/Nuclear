@@ -65,6 +65,8 @@ Nuclear::Nuclear(Arguments* args) {
   bool IsInComment = false;
   bool IsInOperator = false;
   std::string op = "";
+  bool IsInMathematicalOperator = false;
+  std::string mathop = "";
   for (char& c : data) {
     if (IsInQuotes) {
       if (c == '\\') {
@@ -147,6 +149,23 @@ Nuclear::Nuclear(Arguments* args) {
           op += c;
           IsContinued = false;
         }
+      } else if (IsInMathematicalOperator) {
+        mathop+=c;
+        if (mathop == "//") {
+          IsInMathematicalOperator = false;
+          toks+="/";
+          IsContinued = true;
+          mathop = "";
+        } else if (mathop == "+=" || mathop == "-=" || mathop == "*=" || mathop == "/=" || mathop == "%=" || mathop == "++" || mathop == "--") {
+          IsInMathematicalOperator = false;
+          IsContinued = false;
+          tokens.push_back(mathop);
+          mathop = "";
+        } else {
+          tokens.push_back(mathop.substr(0,1));
+          IsInMathematicalOperator = false;
+          IsContinued = true;
+        }
       }
       if (IsContinued) {
         toks+=c;
@@ -178,7 +197,7 @@ Nuclear::Nuclear(Arguments* args) {
         || toks == "u" || toks == "v" || toks == "w" || toks == "x" || toks == "y" || toks == "z" || toks == "A" || toks == "B" || toks == "C" || toks == "D"
         || toks == "E" || toks == "F" || toks == "G" || toks == "H" || toks == "I" || toks == "J" || toks == "K" || toks == "L" || toks == "M" || toks == "N"
         || toks == "O" || toks == "P" || toks == "Q" || toks == "R" || toks == "S" || toks == "T" || toks == "U" || toks == "V" || toks == "W" || toks == "X"
-        || toks == "Y" || toks == "Z" || toks == "^") {
+        || toks == "Y" || toks == "Z" || toks == "~") {
           IsInName = true;
           name+=toks;
           toks = "";
@@ -191,6 +210,10 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (toks == "=" || toks == "!" || toks == "<" || toks == ">" || toks == "|" || toks == "&") {
           IsInOperator = true;
           op+=toks;
+          toks = "";
+        } else if (toks == "+" || toks == "-" || toks == "*" || toks == "/" || toks == "%") {
+          IsInMathematicalOperator = true;
+          mathop+=toks;
           toks = "";
         }
       }

@@ -13,7 +13,7 @@ a = 0
 a = "Hello, World!";
 b = 2.50343245
 b = true
-setAsArray(^a)
+setAsArray(~a)
 a.append(b)
 
 main {
