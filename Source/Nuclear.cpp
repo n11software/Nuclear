@@ -263,10 +263,7 @@ Nuclear::Nuclear(Arguments* args) {
 
   int i=0;
   for (auto& s : tokens) {
-    if (i == 0 && i == tokens.size()-1) std::cout << '[' << std::get<std::string>(s) << ']' << std::endl;
-    else if (i == 0) std::cout << '[' << std::get<std::string>(s) << ", ";
-    else if (i == tokens.size()-1) std::cout << std::get<std::string>(s) << ']' << std::endl;
-    else std::cout << std::get<std::string>(s) << ", ";
+    std::cout << std::get<std::string>(s) << " ";
     i++;
   }
 
