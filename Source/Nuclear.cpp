@@ -85,8 +85,8 @@ Nuclear::Nuclear(Arguments* args) {
           quote += '\\';
           IsEscaped = 0;
         }
-      } else if ((c == 'n' || c == 't' || c == 'b' || c == 'r') && PreviousChar == '\\') {
-        if (IsEscaped == 1) {
+      } else if (c == 'n' || c == 't' || c == 'b' || c == 'r') {
+        if (PreviousChar == '\\' && IsEscaped == 1) {
           switch (c) {
             case 'n': quote += '\n'; break;
             case 't': quote += '\t'; break;
@@ -94,13 +94,13 @@ Nuclear::Nuclear(Arguments* args) {
             case 'r': quote += '\r'; break;
           }
           IsEscaped = 0;
-        } else {
-          std::cout << lines[line-1] << std::endl;
-          for (unsigned int i=0;i<QuoteColumn-1;i++) std::cout << " ";
-          for (unsigned int i=0;i<=lines[line-1].length()-QuoteColumn;i++) std::cout << "^";
-          std::cout << std::endl << "Unterminated string at line " << QuoteLine << ", col " << QuoteColumn << "!" << std::endl;
-          exit(1);
-        }
+        } else quote += c;
+      } else if (c == '\n') {
+        std::cout << lines[line-1] << std::endl;
+        for (unsigned int i=0;i<QuoteColumn-1;i++) std::cout << " ";
+        for (unsigned int i=0;i<=lines[line-1].length()-QuoteColumn;i++) std::cout << "^";
+        std::cout << std::endl << "Unterminated string at line " << QuoteLine << ", col " << QuoteColumn << "!" << std::endl;
+        exit(1);
       } else if (c == '\"' || c == '\'' || c == '`') {
         if (IsEscaped == 1) {
           quote+=c;
@@ -110,7 +110,7 @@ Nuclear::Nuclear(Arguments* args) {
           IsInQuotes = false;
           QuoteInitiator = '\0';
           toks = "";
-          Token token = Token(quote, "str", line, col);
+          Token token = Token(quote, "str", line, col-quote.length()+1);
           tokens.push_back(token);
         } else {
           quote+=c;
@@ -120,7 +120,7 @@ Nuclear::Nuclear(Arguments* args) {
       bool IsContinued = true;
       if (IsInInt) {
         if (c != '0' && c != '1' && c != '2' && c != '3' && c != '4' && c != '5' && c != '6' && c != '7' && c != '8' && c != '9' && c != '.') {
-          Token token = Token(number, "int", line, col);
+          Token token = Token(number, "int", line, col-number.length());
           tokens.push_back(token);
           number = "";
           IsInInt = false;
@@ -136,7 +136,7 @@ Nuclear::Nuclear(Arguments* args) {
         && c != 'O' && c != 'P' && c != 'Q' && c != 'R' && c != 'S' && c != 'T' && c != 'U' && c != 'V' && c != 'W' && c != 'X'
         && c != 'Y' && c != 'Z' && c != '0' && c != '1' && c != '2' && c != '3' && c != '4' && c != '5' && c != '6' && c != '7'
         && c != '8' && c != '9' && c != '.') {
-          Token token = Token(name, "name", line, col);
+          Token token = Token(name, "name", line, col-name.length());
           tokens.push_back(token);
           name = "";
           IsInName = false;
@@ -172,7 +172,7 @@ Nuclear::Nuclear(Arguments* args) {
             std::cout << std::endl << "Invalid operator '" << op << "' at line " << line << ", col " << col-op.length() << "!" << std::endl;
             exit(1);
           }
-          Token token = Token(op, "cop", line, col);
+          Token token = Token(op, "op", line, col-op.length()-1);
           tokens.push_back(token);
           op = "";
           IsInOperator = false;
@@ -190,11 +190,11 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (mathop == "+=" || mathop == "-=" || mathop == "*=" || mathop == "/=" || mathop == "%=" || mathop == "++" || mathop == "--") {
           IsInMathematicalOperator = false;
           IsContinued = false;
-          Token token = Token(mathop, "mop", line, col);
+          Token token = Token(mathop, "mop", line, col-mathop.length()+1);
           tokens.push_back(token);
           mathop = "";
         } else {
-          Token token = Token(mathop.substr(0,1), "mop", line, col);
+          Token token = Token(mathop.substr(0,1), "mop", line, col-1);
           tokens.push_back(token);
           IsInMathematicalOperator = false;
           IsContinued = true;
@@ -203,7 +203,7 @@ Nuclear::Nuclear(Arguments* args) {
       if (IsContinued) {
         toks+=c;
         if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
-          Token token = Token(toks, "special", line, col);
+          Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
         } else if (toks == " ") {
@@ -211,15 +211,15 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (toks == "\n") {
           line++;
           col = 0;
-          Token token = Token(toks, "special", line, col);
+          Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
         } else if (toks == ";") {
-          Token token = Token(toks, "special", line, col);
+          Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
         } else if (toks == ",") {
-          Token token = Token(toks, "special", line, col);
+          Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
         } else if (toks == "\"" || toks == "'" || toks == "`") {
@@ -257,7 +257,7 @@ Nuclear::Nuclear(Arguments* args) {
           mathop+=toks;
           toks = "";
         } else if (toks == "[" || toks == "]") {
-          Token token = Token(toks, "special", line, col);
+          Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
         } else {
@@ -271,13 +271,12 @@ Nuclear::Nuclear(Arguments* args) {
     }
     PreviousChar = c;
     // std::cout << toks << std::endl;
-    if (!IsInQuotes) col++;
+    col++;
     index++;
   }
 
-  for (int i=0;i<tokens.size();i++) {
-    std::string val = tokens[i].getValue() == "\n" ? "\\n" : tokens[i].getValue();
-    std::cout << tokens[i].getType() << ": " << val << std::endl;
+  for (auto& s : tokens) {
+    std::cout << s.getValue() << " ";
   }
 
 }
