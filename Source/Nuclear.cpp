@@ -40,21 +40,27 @@ Nuclear::Nuclear(Arguments* args) {
   this->args = args;
   std::string data = "";
   std::ifstream file(args->getInput());
+  std::vector<std::string> lines;
   if (file.is_open()) {
     std::string line;
-    while (std::getline(file, line)) data += line + "\n";
+    while (std::getline(file, line)) {
+      data += line + "\n";
+      lines.push_back(line);
+    }
     file.close();
   } else {
     std::cout << "Could not open file '" << args->getInput() << "'!" << std::endl;
     std::exit(-1);
   }
-  std::cout << data << std::endl;
+
+  // std::cout << data << std::endl;
 
   std::string toks = "";
   char PreviousChar = '\0';
   bool IsInQuotes = false;
   std::string quote = "";
   char QuoteInitiator = '\0';
+  int QuoteLine, QuoteColumn;
   int IsEscaped = 0;
   bool IsInInt = false;
   std::string number = "";
@@ -67,7 +73,7 @@ Nuclear::Nuclear(Arguments* args) {
   std::string op = "";
   bool IsInMathematicalOperator = false;
   std::string mathop = "";
-
+  
   int line = 1, col = 1, index = 1;
 
   for (char& c : data) {
@@ -79,7 +85,7 @@ Nuclear::Nuclear(Arguments* args) {
           quote += '\\';
           IsEscaped = 0;
         }
-      } else if (c == 'n' || c == 't' || c == 'b' || c == 'r') {
+      } else if ((c == 'n' || c == 't' || c == 'b' || c == 'r') && PreviousChar == '\\') {
         if (IsEscaped == 1) {
           switch (c) {
             case 'n': quote += '\n'; break;
@@ -89,7 +95,11 @@ Nuclear::Nuclear(Arguments* args) {
           }
           IsEscaped = 0;
         } else {
-          quote += c;
+          std::cout << lines[line-1] << std::endl;
+          for (unsigned int i=0;i<QuoteColumn-1;i++) std::cout << " ";
+          for (unsigned int i=0;i<=lines[line-1].length()-QuoteColumn;i++) std::cout << "^";
+          std::cout << std::endl << "Unterminated string at line " << QuoteLine << ", col " << QuoteColumn << "!" << std::endl;
+          exit(1);
         }
       } else if (c == '\"' || c == '\'' || c == '`') {
         if (IsEscaped == 1) {
@@ -153,9 +163,10 @@ Nuclear::Nuclear(Arguments* args) {
       } else if (IsInOperator) {
         if (c != '=' && c != '!' && c != '<' && c != '>' && c != '|' && c != '&') {
           if (!(op == "==" || op == "!=" || op == "!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) {
-            std::cout << "Invalid operator '" << op << "'!" << std::endl;
-            col-=op.length();
-            std::cout << "At line " << line << ", col " << col << std::endl;
+            std::cout << lines[line-1] << std::endl;
+            for (unsigned int i=0;i<col-op.length()-1;i++) std::cout << " ";
+            std::cout << "^";
+            std::cout << std::endl << "Invalid operator '" << op << "' at line " << line << ", col " << col-op.length() << "!" << std::endl;
             exit(1);
           }
           tokens.push_back(op);
@@ -203,6 +214,8 @@ Nuclear::Nuclear(Arguments* args) {
           toks = "";
         } else if (toks == "\"" || toks == "'" || toks == "`") {
           IsInQuotes = true;
+          QuoteLine = line;
+          QuoteColumn = col;
           QuoteInitiator = toks[0];
           quote = "\"";
           toks = "";
@@ -236,29 +249,19 @@ Nuclear::Nuclear(Arguments* args) {
         } else if (toks == "[" || toks == "]") {
           tokens.push_back(toks);
           toks = "";
+        } else {
+          std::cout << lines[line-1] << std::endl;
+          for (unsigned int i=0;i<col-1;i++) std::cout << " ";
+          std::cout << "^";
+          std::cout << std::endl << "Invalid token '" << toks.substr(0, 1) << "' at line " << line << ", col " << col-toks.length()+1 << "!" << std::endl;
+          exit(1);
         }
       }
     }
     PreviousChar = c;
-    std::cout << toks << std::endl;
-    col++;
+    // std::cout << toks << std::endl;
+    if (!IsInQuotes) col++;
     index++;
-  }
-
-  if (QuoteInitiator != '\0') {
-    std::cout << "Unterminated string at line " << line << ", col " << col-toks.length()-1 << "!" << std::endl;
-    exit(1);
-  }
-  if (toks.length() > 0) {
-    std::string error = toks.substr(0, 8);
-    size_t pos = error.find("\n");
-    while( pos != std::string::npos) {
-        error.replace(pos, 2, "");
-        pos = error.find("\n", pos);
-    }
-    std::cout << "Invalid token '" << toks.substr(0, 1) << "' in '" << error << "'!" << std::endl;
-    std::cout << "At line " << line << ", col " << col-toks.length() << std::endl;
-    exit(1);
   }
 
   int i=0;
