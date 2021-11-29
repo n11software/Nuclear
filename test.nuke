@@ -1,2 +1,1 @@
-print("The following number is:", 7);
-print("This is a basic program in Nuclear", 453345); // Sheesh
+print("The following number is:", 4+7.5-1*4^2.26+3*2+8-1^2.9634);

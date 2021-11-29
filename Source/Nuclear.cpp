@@ -211,6 +211,7 @@ Nuclear::Nuclear(Arguments* args) {
         } else {
           Token token = Token(mathop.substr(0,1), "mop", line, col-1);
           tokens.push_back(token);
+          mathop = "";
           IsInMathematicalOperator = false;
           IsContinued = true;
         }
@@ -288,6 +289,148 @@ Nuclear::Nuclear(Arguments* args) {
     // std::cout << toks << std::endl;
     col++;
     index++;
+  }
+
+  // for (int i=0;i<tokens.size();i++) {
+  //   std::cout << tokens[i].type << " " << tokens[i].value << " " << tokens[i].line << " " << tokens[i].column << std::endl;
+  // }
+
+  int MathOperators = -1;
+
+  while (MathOperators != 0) {
+    MathOperators = 0;
+    for (int i=0;i<tokens.size();i++) {
+      if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "int") {
+        int a = std::stoi(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        int c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "int", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "float") {
+        int a = std::stoi(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        float c = powf(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "double") {
+        int a = std::stoi(tokens[i].getValue());
+        double b = std::stof(tokens[i+2].getValue());
+        double c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "int") {
+        float a = std::stof(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        float c = powf(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "float") {
+        float a = std::stof(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        float c = powf(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "double") {
+        float a = std::stof(tokens[i].getValue());
+        double b = std::stod(tokens[i+2].getValue());
+        double c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "int") {
+        double a = std::stod(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        double c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "float") {
+        double a = std::stod(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        double c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+1].getValue() == "^" && tokens[i+2].getType() == "double") {
+        double a = std::stod(tokens[i].getValue());
+        double b = std::stod(tokens[i+2].getValue());
+        double c = pow(a, b);
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      }
+    }
+    for (int i=0;i<tokens.size();i++) {
+      if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
+        int a = std::stoi(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        int c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? a%b : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "int", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
+        int a = std::stoi(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        float c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
+        int a = std::stoi(tokens[i].getValue());
+        double b = std::stod(tokens[i+2].getValue());
+        double c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
+        float a = std::stof(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        float c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
+        float a = std::stof(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        float c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
+        float a = std::stof(tokens[i].getValue());
+        double b = std::stod(tokens[i+2].getValue());
+        double c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
+        double a = std::stod(tokens[i].getValue());
+        int b = std::stoi(tokens[i+2].getValue());
+        double c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
+        double a = std::stod(tokens[i].getValue());
+        float b = std::stof(tokens[i+2].getValue());
+        double c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
+        double a = std::stod(tokens[i].getValue());
+        double b = std::stod(tokens[i+2].getValue());
+        double c = tokens[i+1].getValue() == "*" ? a*b : tokens[i+1].getValue() == "/" ? a/b : tokens[i+1].getValue() == "%" ? fmod(a, b) : tokens[i+1].getValue() == "+" ? a+b : tokens[i+1].getValue() == "-" ? a-b : 0;
+        tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
+        tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
+        MathOperators++;
+      }
+    }
   }
 
   for (int i=0;i<tokens.size();i++) {
