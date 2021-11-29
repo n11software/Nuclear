@@ -8,6 +8,8 @@ Build/%.o: Source/%.cpp
 	@-mkdir -p $(@D)
 	@-g++ -c $^ -std=c++2a -o $@
 
+all: Nuclear run
+
 Nuclear: $(Objects)
 	@g++ $(Objects) -std=c++2a -o Nuclear
 

@@ -292,11 +292,12 @@ Nuclear::Nuclear(Arguments* args) {
 
   for (int i=0;i<tokens.size();i++) {
     Token token = tokens[i];
-    if (tokens.size() >= i+3 && token.getType() == "name" && token.getValue() == "print" && tokens[i+1].getType() == "special" && tokens[i+1].getValue() == "(") {
+    if (tokens.size() >= i+3 && token.getType() == "name" && tokens[i+1].getType() == "special" && tokens[i+1].getValue() == "(") {
       int arguments = -1;
       for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
         if (i+1-x != 0) arguments = -(i+1-x)/2;
         else arguments = 0;
+        break;
       }
       if (arguments == -1) {
         std::cout << lines[tokens[i+1].getLine()-1] << std::endl;
@@ -305,10 +306,8 @@ Nuclear::Nuclear(Arguments* args) {
         std::cout << std::endl << "Unterminated function at line " << tokens[i+1].getLine() << ", col " << tokens[i+1].getColumn() << "!" << std::endl;
         exit(1);
       }
-      std::cout << arguments << std::endl;
       if (arguments == 0) {
-        // Run function
-        std::cout << "No Args supplied!" << std::endl;
+        if (token.getValue() == "print" || token.getValue() == "printf") std::cout << std::endl;
       }
       for (int x=0;x<arguments-1;x++) {
         if (tokens[i+1+(x*2)+2].getValue() != ",") {
@@ -320,18 +319,20 @@ Nuclear::Nuclear(Arguments* args) {
         }
       }
       for (int x=0;x<arguments;x++) {
-        std::string value = "";
-        if (tokens[i+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[i+1+(x*2)+1].getValue().substr(1, tokens[i+1+(x*2)+1].getValue().length()-2);
-        else value = tokens[i+1+(x*2)+1].getValue();
-        std::cout << value << " ";
+        if (token.getValue() == "print" || token.getValue() == "printf") {
+          std::string value = "";
+          if (tokens[i+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[i+1+(x*2)+1].getValue().substr(1, tokens[i+1+(x*2)+1].getValue().length()-2);
+          else value = tokens[i+1+(x*2)+1].getValue();
+          std::cout << value << " ";
+        }
       }
-      std::cout << std::endl;
+      if (token.getValue() == "print" || token.getValue() == "printf") std::cout << std::endl;
       tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+arguments*2+2));
     }
   }
+
   // std::cout << "Token count: " << tokens.size() << std::endl;
   // for (auto& token : tokens) {
   //   std::cout << token.getType() << " " << token.getValue() << " " << token.getLine() << " " << token.getColumn() << std::endl;
   // }
-
 }
