@@ -1,1 +1,2 @@
-print("The following number is:", -8, "and", 800);
+string = "This is a nice variable!"
+print(string);

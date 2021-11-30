@@ -1,6 +1,7 @@
 #include "Nuclear.hpp"
 #include <cmath>
 #include <algorithm>
+#include <map>
 
 std::string toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -295,9 +296,9 @@ Nuclear::Nuclear(Arguments* args) {
   //   std::cout << tokens[i].type << " " << tokens[i].value << " " << tokens[i].line << " " << tokens[i].column << std::endl;
   // }
 
-  std::cout << "Predicted output: " << 800/2*pow(4,2)+16 << std::endl;
-
   // Pemdas sucks
+
+  std::map<std::string, std::string> Dictionary;
 
   for (int i=0;i<tokens.size();i++) {
     if (tokens.size() >= i+1 && (tokens[i+1].getType() == "int" || tokens[i+1].getType() == "float" || tokens[i+1].getType() == "double") && tokens[i].getValue() == "-") {
@@ -308,6 +309,9 @@ Nuclear::Nuclear(Arguments* args) {
 
   for (int i=0;i<tokens.size();i++) {
     Token token = tokens[i];
+    if (tokens.size() >= i+2 && tokens[i].getType() == "name" && tokens[i+1].getValue() == "=") {
+      Dictionary[token.getValue()] = tokens[i+2].getValue();
+    }
     if (tokens.size() >= i+3 && token.getType() == "name" && tokens[i+1].getType() == "special" && tokens[i+1].getValue() == "(") {
       int arguments = -1;
       for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
@@ -344,6 +348,7 @@ Nuclear::Nuclear(Arguments* args) {
             std::cout << std::endl << "Unexpected '" << tokens[i+1+(x*2)+1].getValue() << "' at line " << tokens[i+1+(x*2)+1].getLine() << ", col " << tokens[i+1+(x*2)+1].getColumn()+tokens[i+1+(x*2)+1].getValue().length() << "!" << std::endl;
             exit(1);
           }
+          if (type == "name") tokens[i+1+(x*2)+1] = Token(Dictionary[tokens[i+1+(x*2)+1].getValue()], type, tokens[i+1+(x*2)+1].getLine(), tokens[i+1+(x*2)+1].getColumn());
           std::string value = "";
           if (tokens[i+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[i+1+(x*2)+1].getValue().substr(1, tokens[i+1+(x*2)+1].getValue().length()-2);
           else value = tokens[i+1+(x*2)+1].getValue();
