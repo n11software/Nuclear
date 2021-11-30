@@ -1,1 +1,1 @@
-print("The following number is:", 4+7.5-1*4^2.26+3*2+8-1^2.9634);
+print("The following number is:", -8, "and", 69-420*8008/42);

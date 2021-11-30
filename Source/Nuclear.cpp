@@ -434,6 +434,13 @@ Nuclear::Nuclear(Arguments* args) {
   }
 
   for (int i=0;i<tokens.size();i++) {
+    if (tokens.size() >= i+1 && (tokens[i+1].getType() == "int" || tokens[i+1].getType() == "float" || tokens[i+1].getType() == "double") && tokens[i].getValue() == "-") {
+      tokens[i+1] = Token('-'+tokens[i+1].getValue(), tokens[i+1].getType(), tokens[i+1].getLine(), tokens[i+1].getColumn());
+      tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+1));
+    }
+  }
+
+  for (int i=0;i<tokens.size();i++) {
     Token token = tokens[i];
     if (tokens.size() >= i+3 && token.getType() == "name" && tokens[i+1].getType() == "special" && tokens[i+1].getValue() == "(") {
       int arguments = -1;
@@ -463,6 +470,14 @@ Nuclear::Nuclear(Arguments* args) {
       }
       for (int x=0;x<arguments;x++) {
         if (token.getValue() == "print" || token.getValue() == "printf") {
+          std::string type = tokens[i+1+(x*2)+1].getType();
+          if (!(type == "int" || type == "float" || type == "double" || type == "str" || type == "name")) {
+            std::cout << lines[tokens[i+1+(x*2)+1].getLine()-1] << std::endl;
+            for (unsigned int y=0;y<tokens[i+1+(x*2)+1].getColumn()+tokens[i+1+(x*2)+1].getValue().length();y++) std::cout << " ";
+            std::cout << "^";
+            std::cout << std::endl << "Unexpected '" << tokens[i+1+(x*2)+1].getValue() << "' at line " << tokens[i+1+(x*2)+1].getLine() << ", col " << tokens[i+1+(x*2)+1].getColumn()+tokens[i+1+(x*2)+1].getValue().length() << "!" << std::endl;
+            exit(1);
+          }
           std::string value = "";
           if (tokens[i+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[i+1+(x*2)+1].getValue().substr(1, tokens[i+1+(x*2)+1].getValue().length()-2);
           else value = tokens[i+1+(x*2)+1].getValue();
