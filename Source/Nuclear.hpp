@@ -43,6 +43,7 @@ class Nuclear {
   private:
     Arguments* args;
     std::vector<Token> tokens;
+    void Calculate(int i, int& MathOperators, std::string type);
 };
 
 #endif // Nuclear_hpp
