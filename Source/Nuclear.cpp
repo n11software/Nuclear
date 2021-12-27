@@ -326,10 +326,11 @@ void Nuclear::Compiler() {
   int ExitCode = 0;
   bool HasExited = false;
   std::vector<std::vector<std::string>> assembly;
-  std::vector<std::string> text, data;
-  data.push_back("section .data");
-  text.push_back("section .text");
-  text.push_back("global _start");
+  std::vector<std::string> text, data, global;
+  global.push_back("format ELF64 executable 3");
+  data.push_back("segment readable writable");
+  text.push_back("segment readable executable");
+  text.push_back("entry _start");
   text.push_back("_start:");
   for (unsigned int a=0;a<tokens.size();a++) {
     Token token = tokens[a];
@@ -351,40 +352,50 @@ void Nuclear::Compiler() {
           exit(1);
         }
       }
+      int len = 0;
+      std::string out = "";
       for (int x=0;x<arguments;x++) {
         std::string value = "";
         if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
         else value = tokens[a+1+(x*2)+1].getValue();
+        len+=value.length();
         while (value.find("\n") != std::string::npos) value.replace(value.find("\n"), std::string("\n").size(), "', 10, '");
         while (value.find("\t") != std::string::npos) value.replace(value.find("\t"), std::string("\t").size(), "', 9, '");
-        std::string end = "', 10";
-        if (x!=arguments-1) end = " '";
-        data.push_back("str" + std::to_string(a+1+(x*2)+1) + ": db '" + value + end);
-        data.push_back("strlen" + std::to_string(a+1+(x*2)+1) + ": equ $-str" + std::to_string(a+1+(x*2)+1));
-        text.push_back("  mov edx, strlen" + std::to_string(a+1+(x*2)+1));
-        text.push_back("  mov ecx, str" + std::to_string(a+1+(x*2)+1));
-        text.push_back("  mov ebx, 1");
-        text.push_back("  mov eax, 4");
-        text.push_back("  int 0x80");
+        std::string end = "', 10, 0";
+        if (x!=arguments-1) {
+          end = " ', '";
+          len++;
+        } else len+=2;
+        out += value + end;
       }
+      data.push_back("str" + std::to_string(a) + " db '" + out);
+      data.push_back("strlen" + std::to_string(a) + " equ $-str" + std::to_string(a));
+      text.push_back("  lea rdi, [str" + std::to_string(a) + "]");
+      text.push_back("  mov rax, " + std::to_string(len));
+      text.push_back("  mov rdx, rax");
+      text.push_back("  mov rsi, rdi");
+      text.push_back("  mov rax, 1");
+      text.push_back("  mov rdi, 1");
+      text.push_back("  syscall");
       tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), a+arguments*2+2));
     } else if (token.getValue() == "return" || token.getValue() == "exit") {
       ExitCode = tokens[a+1].getType()=="int"?ExitCode=std::stoi(tokens[a+1].getValue()):0;
       HasExited = true;
-      text.push_back("  mov eax, 1");
-      text.push_back("  mov ebx, " + std::to_string(ExitCode));
-      text.push_back("  int 0x80");
+      text.push_back("  mov rdi, " + std::to_string(ExitCode));
+      text.push_back("  mov rax, 60");
+      text.push_back("  syscall");
       break;
     }
   }
 
   if (!HasExited) {
     text.push_back("  ");
-    text.push_back("  mov eax, 1");
-    text.push_back("  mov ebx, " + std::to_string(ExitCode));
-    text.push_back("  int 0x80");
+    text.push_back("  mov rdi, " + std::to_string(ExitCode));
+    text.push_back("  mov rax, 60");
+    text.push_back("  syscall");
   }
 
+  assembly.push_back(global);
   assembly.push_back(data);
   assembly.push_back(text);
 
