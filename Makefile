@@ -15,3 +15,9 @@ Nuclear: $(Objects)
 
 run:
 	@./Nuclear test.nuke Nuked
+	
+compile:
+	@./Nuclear test.nuke Nuked > test.S
+	@nasm -felf64 test.S
+	@ld test.o -o test
+	@./test

@@ -41,8 +41,13 @@ Arguments::Arguments(int argc, char** argv) {
 
 Nuclear::Nuclear(Arguments* args) { 
   this->args = args;
+  Lexer(args->getInput());
+  Compiler();
+}
+
+void Nuclear::Lexer(std::string path) {
   std::string data = "";
-  std::ifstream file(args->getInput());
+  std::ifstream file(path);
   std::vector<std::string> lines;
   if (file.is_open()) {
     std::string line;
@@ -52,11 +57,9 @@ Nuclear::Nuclear(Arguments* args) {
     }
     file.close();
   } else {
-    std::cout << "Could not open file '" << args->getInput() << "'!" << std::endl;
+    std::cout << "Could not open file '" << path << "'!" << std::endl;
     std::exit(-1);
   }
-
-  // std::cout << data << std::endl;
 
   std::string toks = "";
   char PreviousChar = '\0';
@@ -223,7 +226,7 @@ Nuclear::Nuclear(Arguments* args) {
           Token token = Token(toks, "special", line, col-toks.length()+1);
           tokens.push_back(token);
           toks = "";
-        } else if (toks == " ") {
+        } else if (toks == " " || toks == "\t") {
           toks = "";
         } else if (toks == "\n") {
           line++;
@@ -287,148 +290,94 @@ Nuclear::Nuclear(Arguments* args) {
       }
     }
     PreviousChar = c;
-    // std::cout << toks << std::endl;
     col++;
     index++;
-  }
-
-  // for (int i=0;i<tokens.size();i++) {
-  //   std::cout << tokens[i].type << " " << tokens[i].value << " " << tokens[i].line << " " << tokens[i].column << std::endl;
-  // }
-
-  // Pemdas sucks
-
-  std::map<std::string, std::string> Dictionary;
-
-  for (int i=0;i<tokens.size();i++) {
-    if (tokens.size() >= i+1 && (tokens[i+1].getType() == "int" || tokens[i+1].getType() == "float" || tokens[i+1].getType() == "double") && tokens[i].getValue() == "-") {
-      tokens[i+1] = Token('-'+tokens[i+1].getValue(), tokens[i+1].getType(), tokens[i+1].getLine(), tokens[i+1].getColumn());
-      tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+1));
-    }
-  }
-
-  for (int i=0;i<tokens.size();i++) {
-    Token token = tokens[i];
-    if (tokens.size() >= i+2 && tokens[i].getType() == "name" && tokens[i+1].getValue() == "=") {
-      Dictionary[token.getValue()] = tokens[i+2].getValue();
-    }
-    if (tokens.size() >= i+3 && token.getType() == "name" && tokens[i+1].getType() == "special" && tokens[i+1].getValue() == "(") {
-      int arguments = -1;
-      for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
-        if (i+1-x != 0) arguments = -(i+1-x)/2;
-        else arguments = 0;
-        break;
-      }
-      if (arguments == -1) {
-        std::cout << lines[tokens[i+1].getLine()-1] << std::endl;
-        for (unsigned int x=0;x<tokens[i+1].getColumn()-1;x++) std::cout << " ";
-        std::cout << "^";
-        std::cout << std::endl << "Unterminated function at line " << tokens[i+1].getLine() << ", col " << tokens[i+1].getColumn() << "!" << std::endl;
-        exit(1);
-      }
-      if (arguments == 0) {
-        if (token.getValue() == "print" || token.getValue() == "printf") std::cout << std::endl;
-      }
-      for (int x=0;x<arguments-1;x++) {
-        if (tokens[i+1+(x*2)+2].getValue() != ",") {
-          std::cout << lines[tokens[i+1+(x*2)+2].getLine()-1] << std::endl;
-          for (unsigned int y=0;y<tokens[i+1+(x*2)+2].getColumn()+tokens[i+1+(x*2)+2].getValue().length()-2;y++) std::cout << " ";
-          std::cout << "^^";
-          std::cout << std::endl << "Expected ',' at line " << tokens[i+1+(x*2)+2].getLine() << ", col " << tokens[i+1+(x*2)+2].getColumn()+tokens[i+1+(x*2)+2].getValue().length() << "!" << std::endl;
-          exit(1);
-        }
-      }
-      for (int x=0;x<arguments;x++) {
-        if (token.getValue() == "print" || token.getValue() == "printf") {
-          std::string type = tokens[i+1+(x*2)+1].getType();
-          if (!(type == "int" || type == "float" || type == "double" || type == "str" || type == "name")) {
-            std::cout << lines[tokens[i+1+(x*2)+1].getLine()-1] << std::endl;
-            for (unsigned int y=0;y<tokens[i+1+(x*2)+1].getColumn()+tokens[i+1+(x*2)+1].getValue().length();y++) std::cout << " ";
-            std::cout << "^";
-            std::cout << std::endl << "Unexpected '" << tokens[i+1+(x*2)+1].getValue() << "' at line " << tokens[i+1+(x*2)+1].getLine() << ", col " << tokens[i+1+(x*2)+1].getColumn()+tokens[i+1+(x*2)+1].getValue().length() << "!" << std::endl;
+    if (tokens.size() >= 2 && tokens[tokens.size()-2].getValue() == "import") {
+      if (tokens[tokens.size()-1].getType() == "str") {
+        std::string file = tokens[tokens.size()-1].getValue().substr(1, tokens[tokens.size()-1].getValue().length()-2);
+        for (std::string import: imports) {
+          if (import == file) {
+            std::cout << lines[tokens[tokens.size()-2].getLine()-1] << std::endl;
+            for (unsigned int i=0;i<tokens[tokens.size()-2].getColumn()-1;i++) std::cout << " ";
+            for (unsigned int i=0;i<tokens[tokens.size()-2].getValue().length();i++) std::cout << "^";
+            std::cout << std::endl << "Bad import at line " << tokens[tokens.size()-2].getLine() << ", col " << tokens[tokens.size()-2].getColumn() << ", in '" << path << "'!" << std::endl;
+            std::cout << "Import '" << file << "' already imported!" << std::endl;
             exit(1);
           }
-          if (type == "name") tokens[i+1+(x*2)+1] = Token(Dictionary[tokens[i+1+(x*2)+1].getValue()], type, tokens[i+1+(x*2)+1].getLine(), tokens[i+1+(x*2)+1].getColumn());
-          std::string value = "";
-          if (tokens[i+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[i+1+(x*2)+1].getValue().substr(1, tokens[i+1+(x*2)+1].getValue().length()-2);
-          else value = tokens[i+1+(x*2)+1].getValue();
-          std::cout << value << " ";
         }
+        imports.push_back(file);
+        Token token = Token("", "blank", line, col);
+        tokens[tokens.size()-1] = token;
+        tokens[tokens.size()-2] = token;
+        Lexer(file);
+      } else {
+          std::cout << lines[tokens[tokens.size()-2].getLine()-1] << std::endl;
+          for (unsigned int i=0;i<tokens[tokens.size()-2].getColumn()-1;i++) std::cout << " ";
+          for (unsigned int i=0;i<tokens[tokens.size()-2].getValue().length();i++) std::cout << "^";
+          std::cout << std::endl << "Please include a string after include at line " << tokens[tokens.size()-2].getLine() << ", col " << tokens[tokens.size()-2].getColumn() << "!" << std::endl;
+          exit(1);
       }
-      if (token.getValue() == "print" || token.getValue() == "printf") std::cout << std::endl;
-      tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+arguments*2+2));
+    } 
+  }
+  for (int i=0;i<tokens.size();i++) if (tokens[i].getType() == "blank" && tokens[i].getValue() == "") tokens.erase(tokens.begin()+i-1);
+}
+
+void Nuclear::Compiler() {
+  int ExitCode = 0;
+  bool HasExited = false;
+  std::vector<std::vector<std::string>> assembly;
+  std::vector<std::string> text, data;
+  data.push_back("section .data");
+  text.push_back("section .text");
+  text.push_back("global _start");
+  text.push_back("_start:");
+  for (unsigned int a=0;a<tokens.size();a++) {
+    Token token = tokens[a];
+    // std::cout << token.getValue() << std::endl;
+    if (token.getValue() == "print" && tokens[a+1].getValue() == "(" && tokens[a+2].getType() == "str" && tokens[a+3].getValue() == ")") {
+      std::string string = tokens[a+2].getValue().substr(1, tokens[a+2].getValue().length()-2);
+      while (string.find("\n") != std::string::npos) {
+        string.replace(string.find("\n"), std::string("\n").size(), "\\n");
+      }
+      while (string.find("\t") != std::string::npos) {
+        string.replace(string.find("\t"), std::string("\t").size(), "\\t");
+      }
+      while (string.find("\b") != std::string::npos) {
+        string.replace(string.find("\b"), std::string("\b").size(), "\\b");
+      }
+      while (string.find("\r") != std::string::npos) {
+        string.replace(string.find("\r"), std::string("\r").size(), "\\r");
+      }
+      data.push_back("str" + std::to_string(a) + ": db '" + string + "', 10");
+      data.push_back("strlen" + std::to_string(a) + ": equ $-str" + std::to_string(a));
+      text.push_back("  mov edx, strlen" + std::to_string(a));
+      text.push_back("  mov ecx, str" + std::to_string(a));
+      text.push_back("  mov ebx, 1");
+      text.push_back("  mov eax, 4");
+      text.push_back("  int 0x80");
+    } else if (token.getValue() == "return" || token.getValue() == "exit") {
+      ExitCode = tokens[a+1].getType()=="int"?ExitCode=std::stoi(tokens[a+1].getValue()):0;
+      HasExited = true;
+      text.push_back("  mov eax, 1");
+      text.push_back("  mov ebx, " + std::to_string(ExitCode));
+      text.push_back("  int 0x80");
+      break;
     }
   }
 
-  // std::cout << "Token count: " << tokens.size() << std::endl;
-  // for (auto& token : tokens) {
-  //   std::cout << token.getType() << " " << token.getValue() << " " << token.getLine() << " " << token.getColumn() << std::endl;
-  // }
-}
+  if (!HasExited) {
+    text.push_back("  ");
+    text.push_back("  mov eax, 1");
+    text.push_back("  mov ebx, " + std::to_string(ExitCode));
+    text.push_back("  int 0x80");
+  }
 
-void Nuclear::Calculate(int i, int& MathOperators, std::string type) {
-  if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
-    int a = std::stoi(tokens[i].getValue());
-    int b = std::stoi(tokens[i+2].getValue());
-    int c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? a%b : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "int", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
-    int a = std::stoi(tokens[i].getValue());
-    float b = std::stof(tokens[i+2].getValue());
-    float c = type == "^" ? powf(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "int" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
-    int a = std::stoi(tokens[i].getValue());
-    double b = std::stof(tokens[i+2].getValue());
-    double c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
-    float a = std::stof(tokens[i].getValue());
-    int b = std::stoi(tokens[i+2].getValue());
-    float c = type == "^" ? powf(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
-    float a = std::stof(tokens[i].getValue());
-    float b = std::stof(tokens[i+2].getValue());
-    float c = type == "^" ? powf(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "float", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "float" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
-    float a = std::stof(tokens[i].getValue());
-    double b = std::stod(tokens[i+2].getValue());
-    double c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "int") {
-    double a = std::stod(tokens[i].getValue());
-    int b = std::stoi(tokens[i+2].getValue());
-    double c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "float") {
-    double a = std::stod(tokens[i].getValue());
-    float b = std::stof(tokens[i+2].getValue());
-    double c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
-  } else if (tokens.size() >= i+2 && tokens[i].getType() == "double" && tokens[i+1].getType() == "mop" && tokens[i+2].getType() == "double") {
-    double a = std::stod(tokens[i].getValue());
-    double b = std::stod(tokens[i+2].getValue());
-    double c = type == "^" ? pow(a, b) : type == "*" ? a*b : type == "/" ? a/b : type == "%" ? fmod(a, b) : type == "+" ? a+b : type == "-" ? a-b : 0;
-    tokens.erase(std::next(tokens.begin(), i), std::next(tokens.begin(), i+2));
-    tokens[i] = Token(std::to_string(c), "double", tokens[i].getLine(), tokens[i].getColumn());
-    MathOperators++;
+  assembly.push_back(data);
+  assembly.push_back(text);
+
+  for (std::vector<std::string> seg: assembly) {
+    for (std::string str: seg) {
+      std::cout << str << std::endl;
+    }
   }
 }

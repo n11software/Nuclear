@@ -3,7 +3,7 @@
  */
 
 # Including a file will just import the entire file.
-include "files"
+import 'test.nuke'
 
 setAsArray(@in) {
   in = [in]
@@ -18,8 +18,4 @@ a.append(b)
 
 main {
   // This function automatically will run on start
-  if (b) {
-    print(a)
-    return a
-  } else return {"Error!", false}
 }
