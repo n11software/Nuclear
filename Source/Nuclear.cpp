@@ -334,27 +334,40 @@ void Nuclear::Compiler() {
   for (unsigned int a=0;a<tokens.size();a++) {
     Token token = tokens[a];
     // std::cout << token.getValue() << std::endl;
-    if (token.getValue() == "print" && tokens[a+1].getValue() == "(" && tokens[a+2].getType() == "str" && tokens[a+3].getValue() == ")") {
-      std::string string = tokens[a+2].getValue().substr(1, tokens[a+2].getValue().length()-2);
-      while (string.find("\n") != std::string::npos) {
-        string.replace(string.find("\n"), std::string("\n").size(), "\\n");
+    if (tokens.size() >= a+3 && token.getType() == "name" && token.getValue() == "print" && tokens[a+1].getType() == "special" && tokens[a+1].getValue() == "(") {
+      int arguments = -1;
+      for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
+        if (a+1-x != 0) arguments = -(a+1-x)/2;
+        else arguments = 0;
+        break;
       }
-      while (string.find("\t") != std::string::npos) {
-        string.replace(string.find("\t"), std::string("\t").size(), "\\t");
+      if (arguments == -1) {
+        std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
+        exit(1);
       }
-      while (string.find("\b") != std::string::npos) {
-        string.replace(string.find("\b"), std::string("\b").size(), "\\b");
+      for (int x=0;x<arguments-1;x++) {
+        if (tokens[a+1+(x*2)+2].getValue() != ",") {
+          std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+2].getLine() << ", col " << tokens[a+1+(x*2)+2].getColumn()+tokens[a+1+(x*2)+2].getValue().length() << "!" << std::endl;
+          exit(1);
+        }
       }
-      while (string.find("\r") != std::string::npos) {
-        string.replace(string.find("\r"), std::string("\r").size(), "\\r");
+      for (int x=0;x<arguments;x++) {
+        std::string value = "";
+        if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
+        else value = tokens[a+1+(x*2)+1].getValue();
+        while (value.find("\n") != std::string::npos) value.replace(value.find("\n"), std::string("\n").size(), "', 10, '");
+        while (value.find("\t") != std::string::npos) value.replace(value.find("\t"), std::string("\t").size(), "', 9, '");
+        std::string end = "', 10";
+        if (x!=arguments-1) end = " '";
+        data.push_back("str" + std::to_string(a+1+(x*2)+1) + ": db '" + value + end);
+        data.push_back("strlen" + std::to_string(a+1+(x*2)+1) + ": equ $-str" + std::to_string(a+1+(x*2)+1));
+        text.push_back("  mov edx, strlen" + std::to_string(a+1+(x*2)+1));
+        text.push_back("  mov ecx, str" + std::to_string(a+1+(x*2)+1));
+        text.push_back("  mov ebx, 1");
+        text.push_back("  mov eax, 4");
+        text.push_back("  int 0x80");
       }
-      data.push_back("str" + std::to_string(a) + ": db '" + string + "', 10");
-      data.push_back("strlen" + std::to_string(a) + ": equ $-str" + std::to_string(a));
-      text.push_back("  mov edx, strlen" + std::to_string(a));
-      text.push_back("  mov ecx, str" + std::to_string(a));
-      text.push_back("  mov ebx, 1");
-      text.push_back("  mov eax, 4");
-      text.push_back("  int 0x80");
+      tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), a+arguments*2+2));
     } else if (token.getValue() == "return" || token.getValue() == "exit") {
       ExitCode = tokens[a+1].getType()=="int"?ExitCode=std::stoi(tokens[a+1].getValue()):0;
       HasExited = true;

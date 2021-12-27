@@ -1,3 +1,2 @@
-print("Hello, world!")
-print("This should return error code 69!")
-return 69
+print(1, 69, 420, "Hi")
+print("Hello, world!", "This should be next to hello world!", 69)
