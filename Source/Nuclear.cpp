@@ -369,6 +369,10 @@ void Nuclear::Compiler() {
       int len = 0;
       std::string out = "";
       for (int x=0;x<arguments;x++) {
+        if (!(tokens[a+1+(x*2)+1].getType()=="str" || tokens[a+1+(x*2)+1].getType()=="int" || tokens[a+1+(x*2)+1].getType()=="double" || tokens[a+1+(x*2)+1].getType()=="float")) {
+          std::cout << std::endl << "Expected a string, int, double or float at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn() << "!" << std::endl;
+          exit(1);
+        }
         std::string value = "";
         if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
         else value = tokens[a+1+(x*2)+1].getValue();
