@@ -322,6 +322,20 @@ void Nuclear::Lexer(std::string path) {
   for (int i=0;i<tokens.size();i++) if (tokens[i].getType() == "blank" && tokens[i].getValue() == "") tokens.erase(tokens.begin()+i-1);
 }
 
+void RAS(std::string& source, const std::string& from, const std::string& to) { // Replace All & Swap
+  std::string newString;
+  newString.reserve(source.length());
+  std::string::size_type lastPos = 0;
+  std::string::size_type findPos;
+  while (std::string::npos != (findPos = source.find(from, lastPos))) {
+    newString.append(source, lastPos, findPos - lastPos);
+    newString += to;
+    lastPos = findPos + from.length();
+  }
+  newString += source.substr(lastPos);
+  source.swap(newString);
+}
+
 void Nuclear::Compiler() {
   int ExitCode = 0;
   bool HasExited = false;
@@ -359,6 +373,7 @@ void Nuclear::Compiler() {
         if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
         else value = tokens[a+1+(x*2)+1].getValue();
         len+=value.length();
+        RAS(value, "'", "', 39, '");
         while (value.find("\n") != std::string::npos) value.replace(value.find("\n"), std::string("\n").size(), "', 10, '");
         while (value.find("\t") != std::string::npos) value.replace(value.find("\t"), std::string("\t").size(), "', 9, '");
         std::string end = "', 10, 0";
