@@ -370,6 +370,7 @@ void Nuclear::Compiler() {
         std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
         exit(1);
       }
+      if (arguments == 0) break;
       int start = a+1;
       for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
         if (a+1-x != 0) start = -(a+2-x);
