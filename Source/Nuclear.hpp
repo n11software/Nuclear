@@ -19,21 +19,24 @@ class Arguments {
     int argc;
     char** argv;
     std::string output, input;
+    bool isLibEnabled;
 };
 
 class Token {
   public:
-    Token(std::string value, std::string type, int line, int column) {
+    Token(std::string value, std::string type, int line, int column, std::string path) {
       this->value = value;
       this->type = type;
       this->line = line;
       this->column = column;
+      this->path = path;
     }
     std::string getValue() { return value; }
     std::string getType() { return type; }
     int getLine() { return line; }
     int getColumn() { return column; }
-    std::string value, type;
+    std::string getPath() { return path; }
+    std::string value, type, path;
     int line, column;
 };
 
@@ -45,6 +48,8 @@ class Nuclear {
     std::vector<Token> tokens;
     void Calculate(int i, int& MathOperators, std::string type), Compiler(), Lexer(std::string path);
     std::vector<std::string> imports;
+    std::vector<std::vector<std::string>> lines;
+    std::vector<std::string> paths;
 };
 
 #endif // Nuclear_hpp

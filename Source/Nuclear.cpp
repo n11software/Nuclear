@@ -19,15 +19,18 @@ Arguments::Arguments(int argc, char** argv) {
       for (unsigned int i = 1; i < argc; i++) {
         if (std::ifstream(argv[i]).good()) {
           std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
-          if (toLower(extension) == "nuke" || toLower(extension) == "nuclear") input = argv[i];
+          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") input = argv[i];
         } else {
           std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
-          if (toLower(extension) == "nuke" || toLower(extension) == "nuclear") {
+          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") {
             std::cout << "File '" << argv[i] << "' does not exist!" << std::endl;
             std::exit(-1);
-          }
-          else {
-            if (input != "") output = argv[i];
+          } else {
+            if (input != "") {
+              output = argv[i];
+              if (extension.substr(0, 1) == "N") isLibEnabled = false;
+              else isLibEnabled = true;
+            }
             else {
               std::cout << "Please specify an input file!" << std::endl;
               std::exit(-1);
@@ -56,6 +59,8 @@ void Nuclear::Lexer(std::string path) {
       lines.push_back(line);
     }
     file.close();
+    this->paths.push_back(path);
+    this->lines.push_back(lines);
   } else {
     std::cout << "Could not open file '" << path << "'!" << std::endl;
     std::exit(-1);
@@ -116,7 +121,7 @@ void Nuclear::Lexer(std::string path) {
           IsInQuotes = false;
           QuoteInitiator = '\0';
           toks = "";
-          Token token = Token(quote, "str", line, col-quote.length()+1);
+          Token token = Token(quote, "str", line, col-quote.length()+1, path);
           tokens.push_back(token);
         } else {
           quote+=c;
@@ -139,7 +144,7 @@ void Nuclear::Lexer(std::string path) {
             isFloat = false;
             isInt = false;
           } else isInt = true;
-          Token token = Token(number, isInt ? "int" : isFloat ? "float" : "double", line, col-number.length());
+          Token token = Token(number, isInt ? "int" : isFloat ? "float" : "double", line, col-number.length(), path);
           tokens.push_back(token);
           number = "";
           IsInInt = false;
@@ -155,7 +160,7 @@ void Nuclear::Lexer(std::string path) {
         && c != 'O' && c != 'P' && c != 'Q' && c != 'R' && c != 'S' && c != 'T' && c != 'U' && c != 'V' && c != 'W' && c != 'X'
         && c != 'Y' && c != 'Z' && c != '0' && c != '1' && c != '2' && c != '3' && c != '4' && c != '5' && c != '6' && c != '7'
         && c != '8' && c != '9' && c != '.') {
-          Token token = Token(name, "name", line, col-name.length());
+          Token token = Token(name, "name", line, col-name.length(), path);
           tokens.push_back(token);
           name = "";
           IsInName = false;
@@ -191,7 +196,7 @@ void Nuclear::Lexer(std::string path) {
             std::cout << std::endl << "Invalid operator '" << op << "' at line " << line << ", col " << col-op.length() << "!" << std::endl;
             exit(1);
           }
-          Token token = Token(op, "op", line, col-op.length()-1);
+          Token token = Token(op, "op", line, col-op.length()-1, path);
           tokens.push_back(token);
           op = "";
           IsInOperator = false;
@@ -209,11 +214,11 @@ void Nuclear::Lexer(std::string path) {
         } else if (mathop == "+=" || mathop == "-=" || mathop == "*=" || mathop == "/=" || mathop == "%=" || mathop == "++" || mathop == "--") {
           IsInMathematicalOperator = false;
           IsContinued = false;
-          Token token = Token(mathop, "mop", line, col-mathop.length()+1);
+          Token token = Token(mathop, "mop", line, col-mathop.length()+1, path);
           tokens.push_back(token);
           mathop = "";
         } else {
-          Token token = Token(mathop.substr(0,1), "mop", line, col-1);
+          Token token = Token(mathop.substr(0,1), "mop", line, col-1, path);
           tokens.push_back(token);
           mathop = "";
           IsInMathematicalOperator = false;
@@ -223,7 +228,7 @@ void Nuclear::Lexer(std::string path) {
       if (IsContinued) {
         toks+=c;
         if (toks == "(" || toks == ")" || toks == "{" || toks == "}") {
-          Token token = Token(toks, "special", line, col-toks.length()+1);
+          Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
         } else if (toks == " " || toks == "\t") {
@@ -231,15 +236,15 @@ void Nuclear::Lexer(std::string path) {
         } else if (toks == "\n") {
           line++;
           col = 0;
-          Token token = Token(toks, "special", line, col-toks.length()+1);
+          Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
         } else if (toks == ";") {
-          Token token = Token(toks, "special", line, col-toks.length()+1);
+          Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
         } else if (toks == ",") {
-          Token token = Token(toks, "special", line, col-toks.length()+1);
+          Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
         } else if (toks == "\"" || toks == "'" || toks == "`") {
@@ -277,7 +282,7 @@ void Nuclear::Lexer(std::string path) {
           mathop+=toks;
           toks = "";
         } else if (toks == "[" || toks == "]") {
-          Token token = Token(toks, "special", line, col-toks.length()+1);
+          Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
         } else {
@@ -306,7 +311,7 @@ void Nuclear::Lexer(std::string path) {
           }
         }
         imports.push_back(file);
-        Token token = Token("", "blank", line, col);
+        Token token = Token("", "blank", line, col, path);
         tokens[tokens.size()-1] = token;
         tokens[tokens.size()-2] = token;
         Lexer(file);
@@ -357,12 +362,28 @@ void Nuclear::Compiler() {
         break;
       }
       if (arguments == -1) {
+        int y=0;
+        for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
+        std::cout << lines[y][tokens[a+1].getLine()-1] << std::endl;
+        for (unsigned int i=0;i<tokens[a+1].getColumn()-1;i++) std::cout << " ";
+        std::cout << "^";
         std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
         exit(1);
       }
-      for (int x=0;x<arguments-1;x++) {
-        if (tokens[a+1+(x*2)+2].getValue() != ",") {
-          std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+2].getLine() << ", col " << tokens[a+1+(x*2)+2].getColumn()+tokens[a+1+(x*2)+2].getValue().length() << "!" << std::endl;
+      int start = a+1;
+      for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
+        if (a+1-x != 0) start = -(a+2-x);
+        else start = 0;
+        break;
+      }
+      for (int x=0;x<start;x++) {
+        if (tokens[a+1+(x*2)+2].getValue() != "," && tokens[a+1+(x*2)+2].getValue() != ")") {
+          int y=0;
+          for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
+          std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
+          for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length()-1;i++) std::cout << " ";
+          std::cout << "^^";
+          std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length() << "!" << std::endl;
           exit(1);
         }
       }
@@ -370,6 +391,11 @@ void Nuclear::Compiler() {
       std::string out = "";
       for (int x=0;x<arguments;x++) {
         if (!(tokens[a+1+(x*2)+1].getType()=="str" || tokens[a+1+(x*2)+1].getType()=="int" || tokens[a+1+(x*2)+1].getType()=="double" || tokens[a+1+(x*2)+1].getType()=="float")) {
+          int y=0;
+          for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
+          std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
+          for (unsigned int i=0;i<tokens[a+1+(x*2)].getColumn();i++) std::cout << " ";
+          for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getValue().length();i++) std::cout << "^";
           std::cout << std::endl << "Expected a string, int, double or float at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn() << "!" << std::endl;
           exit(1);
         }
