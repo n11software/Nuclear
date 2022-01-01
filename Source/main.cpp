@@ -10,6 +10,6 @@ int main(int argc, char **argv) {
   Nuclear nuclear = Nuclear(&args);
   end = clock();
   double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
-  // std::cout << "Took " << std::fixed << time_taken << std::setprecision(5) << "s to compile!" << std::endl;
+  std::cout << "Took " << std::fixed << time_taken << std::setprecision(5) << "s to compile!" << std::endl;
   return 0;
 }

@@ -15,6 +15,7 @@ class Arguments {
     Arguments(int argc, char** argv);
     std::string getOutput() { return output; }
     std::string getInput() { return input; }
+    bool getIsLibEnabled() { return isLibEnabled; }
   private:
     int argc;
     char** argv;

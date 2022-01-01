@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <time.h>
 
 std::string toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -19,18 +20,18 @@ Arguments::Arguments(int argc, char** argv) {
       for (unsigned int i = 1; i < argc; i++) {
         if (std::ifstream(argv[i]).good()) {
           std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
-          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") input = argv[i];
+          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") {
+            if (extension.substr(0, 1) == "N") isLibEnabled = false;
+            else isLibEnabled = true;
+            input = argv[i];
+          }
         } else {
           std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
           if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") {
             std::cout << "File '" << argv[i] << "' does not exist!" << std::endl;
             std::exit(-1);
           } else {
-            if (input != "") {
-              output = argv[i];
-              if (extension.substr(0, 1) == "N") isLibEnabled = false;
-              else isLibEnabled = true;
-            }
+            if (input != "") output = argv[i];
             else {
               std::cout << "Please specify an input file!" << std::endl;
               std::exit(-1);
@@ -42,7 +43,7 @@ Arguments::Arguments(int argc, char** argv) {
   }
 }
 
-Nuclear::Nuclear(Arguments* args) { 
+Nuclear::Nuclear(Arguments* args) {
   this->args = args;
   Lexer(args->getInput());
   Compiler();
@@ -345,7 +346,8 @@ void Nuclear::Compiler() {
   int ExitCode = 0;
   bool HasExited = false;
   std::vector<std::vector<std::string>> assembly;
-  std::vector<std::string> text, data, global;
+  std::vector<std::string> text, data, global, functions;
+  if (args->getIsLibEnabled()) functions = {"print"};
   global.push_back("format ELF64 executable 3");
   data.push_back("segment readable writable");
   text.push_back("segment readable executable");
@@ -354,76 +356,103 @@ void Nuclear::Compiler() {
   for (unsigned int a=0;a<tokens.size();a++) {
     Token token = tokens[a];
     // std::cout << token.getValue() << std::endl;
-    if (tokens.size() >= a+3 && token.getType() == "name" && token.getValue() == "print" && tokens[a+1].getType() == "special" && tokens[a+1].getValue() == "(") {
+    if (tokens.size() >= a+3 && token.getType() == "name" && tokens[a+1].getType() == "special" && tokens[a+1].getValue() == "(") {
       int arguments = -1;
       for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
         if (a+1-x != 0) arguments = -(a+1-x)/2;
         else arguments = 0;
         break;
       }
-      if (arguments == -1) {
+      int y=0;
+      for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
+      if (lines[y][tokens[a].getLine()-1].find("{") != std::string::npos) {
+        if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) {
+          std::cout << lines[y][tokens[a].getLine()-1] << std::endl;
+          for (unsigned int i=0;i<tokens[a].getColumn()-1;i++) std::cout << " ";
+          for (unsigned int i=0;i<tokens[a].getValue().length();i++) std::cout << "^";
+          std::cout << std::endl << "Redefinition of function '" << token.getValue() << "' at line " << tokens[a].getLine() << ", col " << tokens[a].getColumn() << "!" << std::endl;
+          exit(1);
+        }
+        functions.push_back(token.getValue());
+        int z=0;
+        for (z=0;z<tokens.size();z++) if (tokens[z].getValue() == "}") break;
+        tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), z+1));
+        continue;
+      }
+      if (std::find(functions.begin(), functions.end(), token.getValue()) == functions.end()) {
         int y=0;
-        for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
-        std::cout << lines[y][tokens[a+1].getLine()-1] << std::endl;
-        for (unsigned int i=0;i<tokens[a+1].getColumn()-1;i++) std::cout << " ";
-        std::cout << "^";
-        std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
-        exit(1);
-      }
-      if (arguments == 0) break;
-      int start = a+1;
-      for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
-        if (a+1-x != 0) start = -(a+2-x);
-        else start = 0;
+        for (y;y<paths.size();y++) if (paths[y] == tokens[a].getPath()) break;
+        std::cout << lines[y][tokens[a].getLine()-1] << std::endl;
+        for (unsigned int i=0;i<tokens[a].getColumn()-1;i++) std::cout << " ";
+        for (unsigned int i=0;i<tokens[a].getValue().length();i++) std::cout << "^";
+        std::cout << std::endl << "Undefined function at line " << tokens[a].getLine() << ", col " << tokens[a].getColumn() << "!" << std::endl;
         break;
-      }
-      for (int x=0;x<start;x++) {
-        if (tokens[a+1+(x*2)+2].getValue() != "," && tokens[a+1+(x*2)+2].getValue() != ")") {
+      } else if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) {
+        if (arguments == -1) {
           int y=0;
-          for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
-          std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
-          for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length()-1;i++) std::cout << " ";
-          std::cout << "^^";
-          std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length() << "!" << std::endl;
+          for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
+          std::cout << lines[y][tokens[a+1].getLine()-1] << std::endl;
+          for (unsigned int i=0;i<tokens[a+1].getColumn()-1;i++) std::cout << " ";
+          std::cout << "^";
+          std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
           exit(1);
         }
-      }
-      int len = 0;
-      std::string out = "";
-      for (int x=0;x<arguments;x++) {
-        if (!(tokens[a+1+(x*2)+1].getType()=="str" || tokens[a+1+(x*2)+1].getType()=="int" || tokens[a+1+(x*2)+1].getType()=="double" || tokens[a+1+(x*2)+1].getType()=="float")) {
-          int y=0;
-          for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
-          std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
-          for (unsigned int i=0;i<tokens[a+1+(x*2)].getColumn();i++) std::cout << " ";
-          for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getValue().length();i++) std::cout << "^";
-          std::cout << std::endl << "Expected a string, int, double or float at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn() << "!" << std::endl;
-          exit(1);
+        int start = a+1;
+        for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
+          if (a+1-x != 0) start = -(a+2-x);
+          else start = 0;
+          break;
         }
-        std::string value = "";
-        if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
-        else value = tokens[a+1+(x*2)+1].getValue();
-        len+=value.length();
-        RAS(value, "'", "', 39, '");
-        while (value.find("\n") != std::string::npos) value.replace(value.find("\n"), std::string("\n").size(), "', 10, '");
-        while (value.find("\t") != std::string::npos) value.replace(value.find("\t"), std::string("\t").size(), "', 9, '");
-        std::string end = "', 10, 0";
-        if (x!=arguments-1) {
-          end = " ', '";
-          len++;
-        } else len+=2;
-        out += value + end;
+        if (token.getValue() == "print") {
+          for (int x=0;x<start;x++) {
+            if (tokens[a+1+(x*2)+2].getValue() != "," && tokens[a+1+(x*2)+2].getValue() != ")") {
+              int y=0;
+              for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
+              std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
+              for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length()-1;i++) std::cout << " ";
+              std::cout << "^^";
+              std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length() << "!" << std::endl;
+              exit(1);
+            }
+          }
+          if (arguments == 0) continue;
+          int len = 0;
+          std::string out = "";
+          for (int x=0;x<arguments;x++) {
+            if (!(tokens[a+1+(x*2)+1].getType()=="str" || tokens[a+1+(x*2)+1].getType()=="int" || tokens[a+1+(x*2)+1].getType()=="double" || tokens[a+1+(x*2)+1].getType()=="float")) {
+              int y=0;
+              for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
+              std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
+              for (unsigned int i=0;i<tokens[a+1+(x*2)].getColumn();i++) std::cout << " ";
+              for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getValue().length();i++) std::cout << "^";
+              std::cout << std::endl << "Expected a string, int, double or float at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn() << "!" << std::endl;
+              exit(1);
+            }
+            std::string value = "";
+            if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
+            else value = tokens[a+1+(x*2)+1].getValue();
+            len+=value.length();
+            RAS(value, "'", "', 39, '");
+            while (value.find("\n") != std::string::npos) value.replace(value.find("\n"), std::string("\n").size(), "', 10, '");
+            while (value.find("\t") != std::string::npos) value.replace(value.find("\t"), std::string("\t").size(), "', 9, '");
+            std::string end = "', 10, 0";
+            if (x!=arguments-1) {
+              end = " ', '";
+              len++;
+            } else len+=2;
+            out += value + end;
+          }
+          data.push_back("str" + std::to_string(a) + " db '" + out);
+          text.push_back("  lea rdi, [str" + std::to_string(a) + "]");
+          text.push_back("  mov rax, " + std::to_string(len));
+          text.push_back("  mov rdx, rax");
+          text.push_back("  mov rsi, rdi");
+          text.push_back("  mov rax, 1");
+          text.push_back("  mov rdi, 1");
+          text.push_back("  syscall");
+        }
+        tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), a+arguments*2+2));
       }
-      data.push_back("str" + std::to_string(a) + " db '" + out);
-      data.push_back("strlen" + std::to_string(a) + " equ $-str" + std::to_string(a));
-      text.push_back("  lea rdi, [str" + std::to_string(a) + "]");
-      text.push_back("  mov rax, " + std::to_string(len));
-      text.push_back("  mov rdx, rax");
-      text.push_back("  mov rsi, rdi");
-      text.push_back("  mov rax, 1");
-      text.push_back("  mov rdi, 1");
-      text.push_back("  syscall");
-      tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), a+arguments*2+2));
     } else if (token.getValue() == "return" || token.getValue() == "exit") {
       ExitCode = tokens[a+1].getType()=="int"?ExitCode=std::stoi(tokens[a+1].getValue()):0;
       HasExited = true;
@@ -445,9 +474,14 @@ void Nuclear::Compiler() {
   assembly.push_back(data);
   assembly.push_back(text);
 
+  std::string Output;
   for (std::vector<std::string> seg: assembly) {
     for (std::string str: seg) {
-      std::cout << str << std::endl;
+      Output+=str+'\n';
     }
   }
+  std::ofstream file;
+  file.open("/tmp/"+args->getOutput()+".S");
+  file << Output;
+  file.close();
 }

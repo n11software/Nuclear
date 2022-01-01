@@ -5,16 +5,16 @@ Objects = $(patsubst Source/%.cpp, Build/%.o, $(CPPSourceCode))
 Directories = $(wildcard Source/*)
 
 Build/%.o: Source/%.cpp
-	@-mkdir -p $(@D)
-	@-g++ -c $^ -std=c++2a -o $@
+	@mkdir -p $(@D)
+	@g++ -c $^ -std=c++2a -o $@
 
 Nuclear: $(Objects)
 	@g++ $(Objects) -std=c++2a -o Nuclear
 
 run:
+	@-rm ./Nuked
 	@./Nuclear test.nuke Nuked
-
-compile:
-	@./Nuclear test.nuke Nuked > test.S
-	@-fasm test.S
-	@./test
+	@fasm /tmp/Nuked.S Nuked > /dev/null
+	@rm /tmp/Nuked.S
+	@chmod +x Nuked
+	@./Nuked
