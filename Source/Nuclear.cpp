@@ -6,6 +6,7 @@
 #include <random>
 #include <cctype>
 #include <sys/stat.h>
+#include <filesystem>
 
 std::string toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -128,7 +129,7 @@ void Nuclear::Lexer(std::string path) {
           Token token = Token(quote, "str", line, col-quote.length()+1, path);
           tokens.push_back(token);
         } else {
-          quote+=c;
+          quote+=c; // TODO: Remove unknown null terminators
         }
       } else quote+=c;
     } else {
@@ -496,7 +497,7 @@ void Nuclear::Compiler() {
   file << Output;
   file.close();
   
-  if (remove((args->getOutput()).c_str()) != 0) {
+  if (std::filesystem::exists((args->getOutput()).c_str()) && remove((args->getOutput()).c_str()) != 0) {
     std::cout << "Error whilst removing old binary for FASM!" << std::endl;
     exit(1);
   }
