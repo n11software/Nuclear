@@ -508,7 +508,7 @@ void Nuclear::Compiler() {
   }
 
   system(("fasm /tmp/"+args->getOutput()+"-"+r+".S "+args->getOutput()+" > /dev/null").c_str());
-  chmod(args->getOutput().c_str(), 0100);
+  chmod(args->getOutput().c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IXUSR|S_IXGRP|S_IXOTH);
 
   if (remove(("/tmp/"+args->getOutput()+"-"+r+".S").c_str()) != 0) {
     std::cout << "Error whilst removing temporary file for FASM!" << std::endl;
