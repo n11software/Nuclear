@@ -3,19 +3,23 @@
  */
 
 # Including a file will just import the entire file.
-import 'test.nuke'
+import `test.nuke`
 
 setAsArray(@in) {
   in = [in]
 }
 
-a = 0
+apples
+
+a = 256
 a = "Hello, World!";
-b = 2.50343245
+b = 0.50343245+a
 b = true
 setAsArray(a)
 a.append(b)
 
-main {
+main() {
+  while("Hello, World!")
+  test()
   // This function automatically will run on start
 }

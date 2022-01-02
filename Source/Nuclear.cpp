@@ -77,7 +77,7 @@ void Nuclear::Lexer(std::string path) {
   std::string quote = "";
   char QuoteInitiator = '\0';
   int QuoteLine, QuoteColumn;
-  int IsEscaped = 0;
+  int IsEscaped = 0, EscapedCol = 0;
   bool IsInInt = false;
   std::string number = "";
   bool IsInName = false;
@@ -97,6 +97,7 @@ void Nuclear::Lexer(std::string path) {
       toks+=c;
       if (c == '\\') {
         IsEscaped++;
+        EscapedCol=col-1;
         if (IsEscaped == 2) {
           quote += '\\';
           IsEscaped = 0;
@@ -119,17 +120,21 @@ void Nuclear::Lexer(std::string path) {
         exit(1);
       } else if (c == '\"' || c == '\'' || c == '`') {
         if (IsEscaped == 1) {
-          quote+=c;
-          IsEscaped = 0;
+          std::cout << lines[line-1] << std::endl;
+          for (unsigned int i=0;i<EscapedCol;i++) std::cout << " ";
+          std::cout << "^^" << std::endl;
+          std::cout << "Unknown terminator at line " << line << ", col " << EscapedCol << "!" << std::endl;
+          exit(1);
         } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
-          quote+='"';
+          quote+=QuoteInitiator;
           IsInQuotes = false;
           QuoteInitiator = '\0';
           toks = "";
           Token token = Token(quote, "str", line, col-quote.length()+1, path);
           tokens.push_back(token);
         } else {
-          quote+=c; // TODO: Remove unknown null terminators
+          // Not sure how you even reach this point
+          quote+=c;
         }
       } else quote+=c;
     } else {
