@@ -12,9 +12,5 @@ Nuclear: $(Objects)
 	@g++ $(Objects) -std=c++2a -o Nuclear
 
 run:
-	@-rm ./Nuked
 	@./Nuclear test.nuke Nuked
-	@fasm /tmp/Nuked.S Nuked > /dev/null
-	@rm /tmp/Nuked.S
-	@chmod +x Nuked
 	@./Nuked

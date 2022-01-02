@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <map>
 #include <time.h>
+#include <random>
+#include <cctype>
+#include <sys/stat.h>
 
 std::string toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -473,6 +476,14 @@ void Nuclear::Compiler() {
   assembly.push_back(global);
   assembly.push_back(data);
   assembly.push_back(text);
+  
+  
+  std::random_device OSSeed;
+  const uint_least32_t seed = OSSeed();
+  std::mt19937 generator(seed);
+  std::uniform_int_distribution<uint_least32_t> distribute(0, 9);
+  std::string r = "";
+  for (int repetition=0;repetition<10;repetition++) r+=std::to_string(distribute(generator));
 
   std::string Output;
   for (std::vector<std::string> seg: assembly) {
@@ -481,7 +492,20 @@ void Nuclear::Compiler() {
     }
   }
   std::ofstream file;
-  file.open("/tmp/"+args->getOutput()+".S");
+  file.open("/tmp/"+args->getOutput()+"-"+r+".S");
   file << Output;
   file.close();
+  
+  if (remove((args->getOutput()).c_str()) != 0) {
+    std::cout << "Error whilst removing old binary for FASM!" << std::endl;
+    exit(1);
+  }
+
+  system(("fasm /tmp/"+args->getOutput()+"-"+r+".S "+args->getOutput()+" > /dev/null").c_str());
+  chmod(args->getOutput().c_str(), 0100);
+
+  if (remove(("/tmp/"+args->getOutput()+"-"+r+".S").c_str()) != 0) {
+    std::cout << "Error whilst removing temporary file for FASM!" << std::endl;
+    exit(1);
+  }
 }
