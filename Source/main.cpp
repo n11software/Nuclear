@@ -16,5 +16,6 @@ int main(int argc, char **argv) {
     double time_taken = double(end - start) / double(CLOCKS_PER_SEC);
     std::cout << "Took " << std::fixed << time_taken << std::setprecision(5) << "s to compile!" << std::endl;
   }
+  if (args.getRunAfter()) system(("./"+args.getOutput()).c_str());
   return 0;
 }

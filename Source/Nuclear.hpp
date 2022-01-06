@@ -17,11 +17,12 @@ class Arguments {
     std::string getInput() { return input; }
     bool getIsLibEnabled() { return isLibEnabled; }
     bool getIsShowingTime() { return showTime; }
+    bool getRunAfter() { return runAfter; }
   private:
     int argc;
     char** argv;
     std::string output, input;
-    bool isLibEnabled, showTime;
+    bool isLibEnabled, showTime, runAfter;
 };
 
 class Token {
