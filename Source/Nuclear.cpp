@@ -25,6 +25,7 @@ Arguments::Arguments(int argc, char** argv) {
       std::cout << "Nuclear v" << Version << std::endl;
       exit(0);
     }
+    if (std::string(argv[a]) == "--time" || std::string(argv[a]) == "-t") showTime = true;
     std::string extension = std::string(argv[a]).substr(std::string(argv[a]).find_last_of(".") + 1);
     if (extension == std::string(argv[a])) extension = "";
     if (extension == "" || extension == "exe") {
