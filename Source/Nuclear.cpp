@@ -18,30 +18,28 @@ Arguments::Arguments(int argc, char** argv) {
   this->argv = argv;
   if (argc == 1) {
     std::cout << "Nuclear v" << Version << std::endl;
-  } else if (argc >= 2) {
-    if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") std::cout << "Nuclear v" << Version << std::endl;
-    else {
-      for (unsigned int i = 1; i < argc; i++) {
-        if (std::ifstream(argv[i]).good()) {
-          std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
-          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") {
-            if (extension.substr(0, 1) == "N") isLibEnabled = false;
-            else isLibEnabled = true;
-            input = argv[i];
-          }
-        } else {
-          std::string extension = std::string(argv[i]).substr(std::string(argv[i]).find_last_of(".") + 1);
-          if (toLower(extension) == "nuke" || toLower(extension) == "n" || toLower(extension) == "nuclear") {
-            std::cout << "File '" << argv[i] << "' does not exist!" << std::endl;
-            std::exit(-1);
-          } else {
-            if (input != "") output = argv[i];
-            else {
-              std::cout << "Please specify an input file!" << std::endl;
-              std::exit(-1);
-            }
-          }
-        }
+    exit(0);
+  }
+  for (unsigned int a=0;a<argc;a++) {
+    if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-v") {
+      std::cout << "Nuclear v" << Version << std::endl;
+      exit(0);
+    }
+    std::string extension = std::string(argv[a]).substr(std::string(argv[a]).find_last_of(".") + 1);
+    if (extension == std::string(argv[a])) extension = "";
+    if (extension == "" || extension == "exe") {
+      this->output = std::string(argv[a]);
+    } else if (extension == toLower("n") || extension == toLower("nuclear") || extension == toLower("nuke")) {
+      if (!std::ifstream(argv[a]).good()) {
+        fprintf(stderr, "Error: File %s does not exist!\n", argv[a]);
+        exit(0);
+      }
+      if (extension.substr(0, 1) == "N") {
+        this->input = std::string(argv[a]);
+        isLibEnabled = false;
+      } else {
+        this->input = std::string(argv[a]);
+        isLibEnabled = true;
       }
     }
   }
@@ -497,8 +495,8 @@ void Nuclear::Compiler() {
       Output+=str+'\n';
     }
   }
-  std::ofstream file;
-  file.open("/tmp/"+args->getOutput()+"-"+r+".S");
+  std::fstream file;
+  file.open("/tmp/"+args->getOutput()+"-"+r+".S", std::fstream::out);
   file << Output;
   file.close();
   
