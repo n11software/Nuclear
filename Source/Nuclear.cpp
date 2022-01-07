@@ -76,7 +76,7 @@ void Nuclear::Lexer(std::string path) {
     this->paths.push_back(path);
     this->lines.push_back(lines);
   } else {
-    std::cout << "Could not open file '" << path << "'!" << std::endl;
+    fprintf(stderr, "Could not open file '%s'!\n", path);
     std::exit(-1);
   }
 
@@ -335,7 +335,6 @@ void Nuclear::Compiler() {
   text.push_back("_start:");
   for (unsigned int a=0;a<tokens.size();a++) {
     Token token = tokens[a];
-    // std::cout << token.getValue() << std::endl;
     if (tokens.size() >= a+3 && token.getType() == "name" && tokens[a+1].getType() == "special" && tokens[a+1].getValue() == "(") {
       int arguments = -1;
       for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
@@ -446,21 +445,17 @@ void Nuclear::Compiler() {
       Output+=str+'\n';
     }
   }
+
   std::fstream file;
   file.open("/tmp/"+args->getOutput()+"-"+r+".S", std::fstream::out);
   file << Output;
   file.close();
-  
-  if (std::filesystem::exists((args->getOutput()).c_str()) && remove((args->getOutput()).c_str()) != 0) {
-    std::cout << "Error whilst removing old binary for FASM!" << std::endl;
-    exit(1);
-  }
 
   system(("fasm /tmp/"+args->getOutput()+"-"+r+".S "+args->getOutput()+" > /dev/null").c_str());
   chmod(args->getOutput().c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IXUSR|S_IXGRP|S_IXOTH);
 
   if (remove(("/tmp/"+args->getOutput()+"-"+r+".S").c_str()) != 0) {
-    std::cout << "Error whilst removing temporary file for FASM!" << std::endl;
+    fprintf(stderr, "Error whilst removing temporary file for FASM!\n");
     exit(1);
   }
 }
