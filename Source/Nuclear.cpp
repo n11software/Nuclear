@@ -36,6 +36,7 @@ Arguments::Arguments(int argc, char** argv) {
     }
     if (std::string(argv[a]) == "--time" || std::string(argv[a]) == "-t") {showTime = true;continue;}
     if (std::string(argv[a]) == "--run" || std::string(argv[a]) == "-r") {runAfter = true;continue;}
+    if (std::string(argv[a]) == "--assembly" || std::string(argv[a]) == "--asm" || std::string(argv[a]) == "-S") {outputAssembly = true;continue;}
     std::string extension = std::string(argv[a]).substr(std::string(argv[a]).find_last_of(".") + 1);
     if (extension == std::string(argv[a])) extension = "";
     if (extension == "" || extension == "exe") {
@@ -431,13 +432,14 @@ void Nuclear::Compiler() {
   assembly.push_back(data);
   assembly.push_back(text);
   
-  
-  std::random_device OSSeed;
-  const uint_least32_t seed = OSSeed();
-  std::mt19937 generator(seed);
-  std::uniform_int_distribution<uint_least32_t> distribute(0, 9);
   std::string r = "";
-  for (int repetition=0;repetition<10;repetition++) r+=std::to_string(distribute(generator));
+  if (args->getOutputAssembly()) {
+    std::random_device OSSeed;
+    const uint_least32_t seed = OSSeed();
+    std::mt19937 generator(seed);
+    std::uniform_int_distribution<uint_least32_t> distribute(0, 9);
+    for (int repetition=0;repetition<10;repetition++) r+=std::to_string(distribute(generator));
+  }
 
   std::string Output;
   for (std::vector<std::string> seg: assembly) {
@@ -447,15 +449,17 @@ void Nuclear::Compiler() {
   }
 
   std::fstream file;
-  file.open("/tmp/"+args->getOutput()+"-"+r+".S", std::fstream::out);
+  file.open(args->getOutputAssembly() ? args->getOutput() : "/tmp/"+args->getOutput()+"-"+r+".S", std::fstream::out);
   file << Output;
   file.close();
 
-  system(("fasm /tmp/"+args->getOutput()+"-"+r+".S "+args->getOutput()+" > /dev/null").c_str());
-  chmod(args->getOutput().c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IXUSR|S_IXGRP|S_IXOTH);
+  if (!args->getOutputAssembly()) {
+    system(("fasm /tmp/"+args->getOutput()+"-"+r+".S "+args->getOutput()+" > /dev/null").c_str());
+    chmod(args->getOutput().c_str(), S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IXUSR|S_IXGRP|S_IXOTH);
 
-  if (remove(("/tmp/"+args->getOutput()+"-"+r+".S").c_str()) != 0) {
-    fprintf(stderr, "Error whilst removing temporary file for FASM!\n");
-    exit(1);
+    if (remove(("/tmp/"+args->getOutput()+"-"+r+".S").c_str()) != 0) {
+      fprintf(stderr, "Error whilst removing temporary file for FASM!\n");
+      exit(1);
+    }
   }
 }
