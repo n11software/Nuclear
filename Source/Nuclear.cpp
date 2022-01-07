@@ -8,6 +8,15 @@
 #include <sys/stat.h>
 #include <filesystem>
 
+void Error(std::string msg, int col, int line, int colStart, int colEnd, std::string lineData, std::string file) {
+  fprintf(stderr, "%s\n", lineData.c_str());
+  for (unsigned int i=0;i<col-colStart;i++) fprintf(stderr, " ");
+  fprintf(stderr, "\033[31m");
+  for (unsigned int i=0;i<colEnd;i++) fprintf(stderr, "^");
+  fprintf(stderr, "\n\033[1m\033[31m%s at line %i, col %i, in file %s!\033[0m\n", msg.c_str(), line, col, file.c_str());
+  exit(1);
+}
+
 std::string toLower(std::string str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
   return str;
@@ -113,18 +122,10 @@ void Nuclear::Lexer(std::string path) {
           IsEscaped = 0;
         } else quote += c;
       } else if (c == '\n') {
-        std::cout << lines[line-1] << std::endl;
-        for (unsigned int i=0;i<QuoteColumn-1;i++) std::cout << " ";
-        for (unsigned int i=0;i<=lines[line-1].length()-QuoteColumn;i++) std::cout << "^";
-        std::cout << std::endl << "Unterminated string at line " << QuoteLine << ", col " << QuoteColumn << "!" << std::endl;
-        exit(1);
+        Error("Unterminated string", QuoteColumn, QuoteLine, 0, lines[line-1].length()-QuoteColumn, lines[QuoteLine-1], path);
       } else if (c == '\"' || c == '\'' || c == '`') {
         if (IsEscaped == 1) {
-          std::cout << lines[line-1] << std::endl;
-          for (unsigned int i=0;i<EscapedCol;i++) std::cout << " ";
-          std::cout << "^^" << std::endl;
-          std::cout << "Unknown terminator at line " << line << ", col " << EscapedCol << "!" << std::endl;
-          exit(1);
+          Error("Unknown terminator", EscapedCol, line, 0, 2, lines[line-1], path);
         } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
           quote+=QuoteInitiator;
           IsInQuotes = false;
@@ -132,9 +133,6 @@ void Nuclear::Lexer(std::string path) {
           toks = "";
           Token token = Token(quote, "str", line, col-quote.length()+1, path);
           tokens.push_back(token);
-        } else {
-          // Not sure how you even reach this point
-          quote+=c;
         }
       } else quote+=c;
     } else {
@@ -199,13 +197,7 @@ void Nuclear::Lexer(std::string path) {
         IsContinued = false;
       } else if (IsInOperator) {
         if (c != '=' && c != '!' && c != '<' && c != '>' && c != '|' && c != '&') {
-          if (!(op == "==" || op == "!=" || op == "!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) {
-            std::cout << lines[line-1] << std::endl;
-            for (unsigned int i=0;i<col-op.length()-1;i++) std::cout << " ";
-            std::cout << "^";
-            std::cout << std::endl << "Invalid operator '" << op << "' at line " << line << ", col " << col-op.length() << "!" << std::endl;
-            exit(1);
-          }
+          if (!(op == "==" || op == "!=" || op == "!" || op == "<=" || op == ">=" || op == ">" || op == "=" || op == "<" || op == "||" || op == "&&")) Error("Invalid operator", col-op.length(), line, 1, op.length(), lines[line-1], path);
           Token token = Token(op, "op", line, col-op.length()-1, path);
           tokens.push_back(token);
           op = "";
@@ -295,13 +287,7 @@ void Nuclear::Lexer(std::string path) {
           Token token = Token(toks, "special", line, col-toks.length()+1, path);
           tokens.push_back(token);
           toks = "";
-        } else {
-          std::cout << lines[line-1] << std::endl;
-          for (unsigned int i=0;i<col-1;i++) std::cout << " ";
-          std::cout << "^";
-          std::cout << std::endl << "Invalid token '" << toks.substr(0, 1) << "' at line " << line << ", col " << col-toks.length()+1 << "!" << std::endl;
-          exit(1);
-        }
+        } else Error("Invalid token", col, line, 1, 1, lines[line-1], path);
       }
     }
     PreviousChar = c;
@@ -310,28 +296,13 @@ void Nuclear::Lexer(std::string path) {
     if (tokens.size() >= 2 && tokens[tokens.size()-2].getValue() == "import") {
       if (tokens[tokens.size()-1].getType() == "str") {
         std::string file = tokens[tokens.size()-1].getValue().substr(1, tokens[tokens.size()-1].getValue().length()-2);
-        for (std::string import: imports) {
-          if (import == file) {
-            std::cout << lines[tokens[tokens.size()-2].getLine()-1] << std::endl;
-            for (unsigned int i=0;i<tokens[tokens.size()-2].getColumn()-1;i++) std::cout << " ";
-            for (unsigned int i=0;i<tokens[tokens.size()-2].getValue().length();i++) std::cout << "^";
-            std::cout << std::endl << "Bad import at line " << tokens[tokens.size()-2].getLine() << ", col " << tokens[tokens.size()-2].getColumn() << ", in '" << path << "'!" << std::endl;
-            std::cout << "Import '" << file << "' already imported!" << std::endl;
-            exit(1);
-          }
-        }
+        for (std::string import: imports) if (import == file) Error("Import loop", tokens[tokens.size()-1].getColumn(), tokens[tokens.size()-1].getLine(), 0, tokens[tokens.size()-1].getValue().length()-2, lines[tokens[tokens.size()-1].getLine()-1], path);
         imports.push_back(file);
         Token token = Token("", "blank", line, col, path);
         tokens[tokens.size()-1] = token;
         tokens[tokens.size()-2] = token;
         Lexer(file);
-      } else {
-          std::cout << lines[tokens[tokens.size()-2].getLine()-1] << std::endl;
-          for (unsigned int i=0;i<tokens[tokens.size()-2].getColumn()-1;i++) std::cout << " ";
-          for (unsigned int i=0;i<tokens[tokens.size()-2].getValue().length();i++) std::cout << "^";
-          std::cout << std::endl << "Please include a string after include at line " << tokens[tokens.size()-2].getLine() << ", col " << tokens[tokens.size()-2].getColumn() << "!" << std::endl;
-          exit(1);
-      }
+      } else Error("Please include a string after include", tokens[tokens.size()-2].getColumn(), tokens[tokens.size()-2].getLine(), 1, tokens[tokens.size()-2].getValue().length(), lines[tokens[tokens.size()-2].getLine()-1], path);
     } 
   }
   for (int i=0;i<tokens.size();i++) if (tokens[i].getType() == "blank" && tokens[i].getValue() == "") tokens.erase(tokens.begin()+i-1);
@@ -375,13 +346,7 @@ void Nuclear::Compiler() {
       int y=0;
       for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
       if (lines[y][tokens[a].getLine()-1].find("{") != std::string::npos) {
-        if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) {
-          std::cout << lines[y][tokens[a].getLine()-1] << std::endl;
-          for (unsigned int i=0;i<tokens[a].getColumn()-1;i++) std::cout << " ";
-          for (unsigned int i=0;i<tokens[a].getValue().length();i++) std::cout << "^";
-          std::cout << std::endl << "Redefinition of function '" << token.getValue() << "' at line " << tokens[a].getLine() << ", col " << tokens[a].getColumn() << "!" << std::endl;
-          exit(1);
-        }
+        if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) Error("Redefinition of function '" + token.getValue() + "'", tokens[a].getColumn(), tokens[a].getLine(), 1, tokens[a].getValue().length(), lines[y][tokens[a].getLine()-1], paths[y]);
         functions.push_back(token.getValue());
         int z=0;
         for (z=0;z<tokens.size();z++) if (tokens[z].getValue() == "}") break;
@@ -391,20 +356,12 @@ void Nuclear::Compiler() {
       if (std::find(functions.begin(), functions.end(), token.getValue()) == functions.end()) {
         int y=0;
         for (y;y<paths.size();y++) if (paths[y] == tokens[a].getPath()) break;
-        std::cout << lines[y][tokens[a].getLine()-1] << std::endl;
-        for (unsigned int i=0;i<tokens[a].getColumn()-1;i++) std::cout << " ";
-        for (unsigned int i=0;i<tokens[a].getValue().length();i++) std::cout << "^";
-        std::cout << std::endl << "Undefined function at line " << tokens[a].getLine() << ", col " << tokens[a].getColumn() << "!" << std::endl;
-        break;
+        Error("Undefined function", tokens[a].getColumn(), tokens[a].getLine(), 1, tokens[a].getValue().length(), lines[y][tokens[a].getLine()-1], paths[y]);
       } else if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) {
         if (arguments == -1) {
           int y=0;
           for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
-          std::cout << lines[y][tokens[a+1].getLine()-1] << std::endl;
-          for (unsigned int i=0;i<tokens[a+1].getColumn()-1;i++) std::cout << " ";
-          std::cout << "^";
-          std::cout << std::endl << "Unterminated function at line " << tokens[a+1].getLine() << ", col " << tokens[a+1].getColumn() << "!" << std::endl;
-          exit(1);
+          Error("Unterminated function", tokens[a+1].getColumn(), tokens[a+1].getLine(), 1, tokens[a+1].getValue().length(), lines[y][tokens[a+1].getLine()-1], paths[y]);
         }
         int start = a+1;
         for (int x=0;x<tokens.size();x++) if (tokens[x].getType() == "special" && tokens[x].getValue() == ")") {
@@ -417,11 +374,7 @@ void Nuclear::Compiler() {
             if (tokens[a+1+(x*2)+2].getValue() != "," && tokens[a+1+(x*2)+2].getValue() != ")") {
               int y=0;
               for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
-              std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
-              for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length()-1;i++) std::cout << " ";
-              std::cout << "^^";
-              std::cout << std::endl << "Expected ',' at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length() << "!" << std::endl;
-              exit(1);
+              Error("Expected a ','", tokens[a+1+(x*2)+1].getColumn()+tokens[a+1+(x*2)+1].getValue().length(), tokens[a+1+(x*2)+1].getLine(), 1, 2, lines[y][tokens[a+1+(x*2)+1].getLine()-1], paths[y]);
             }
           }
           if (arguments == 0) continue;
@@ -431,11 +384,7 @@ void Nuclear::Compiler() {
             if (!(tokens[a+1+(x*2)+1].getType()=="str" || tokens[a+1+(x*2)+1].getType()=="int" || tokens[a+1+(x*2)+1].getType()=="double" || tokens[a+1+(x*2)+1].getType()=="float")) {
               int y=0;
               for (y;y<paths.size();y++) if (paths[y] == tokens[a+1+(x*2)+1].getPath()) break;
-              std::cout << lines[y][tokens[a+1+(x*2)+1].getLine()-1] << std::endl;
-              for (unsigned int i=0;i<tokens[a+1+(x*2)].getColumn();i++) std::cout << " ";
-              for (unsigned int i=0;i<tokens[a+1+(x*2)+1].getValue().length();i++) std::cout << "^";
-              std::cout << std::endl << "Expected a string, int, double or float at line " << tokens[a+1+(x*2)+1].getLine() << ", col " << tokens[a+1+(x*2)+1].getColumn() << "!" << std::endl;
-              exit(1);
+              Error("Expected a string, int, double or float", tokens[a+1+(x*2)+1].getColumn(), tokens[a+1+(x*2)+1].getLine(), 1, tokens[a+1+(x*2)+1].getValue().length(), lines[y][tokens[a+1+(x*2)+1].getLine()-1], paths[y]);
             }
             std::string value = "";
             if (tokens[a+1+(x*2)+1].getValue().substr(0,1) == "\"") value = tokens[a+1+(x*2)+1].getValue().substr(1, tokens[a+1+(x*2)+1].getValue().length()-2);
