@@ -10,6 +10,12 @@
 #include <algorithm>
 #include <variant>
 
+class Function {
+  public:
+    std::string name;
+    std::vector<std::string> lines;
+};
+
 class Arguments {
   public:
     Arguments(int argc, char** argv);

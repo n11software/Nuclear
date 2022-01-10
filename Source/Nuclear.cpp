@@ -122,12 +122,10 @@ void Nuclear::Lexer(std::string path) {
           }
           IsEscaped = 0;
         } else quote += c;
-      } else if (c == '\n') {
-        Error("Unterminated string", QuoteColumn, QuoteLine, 0, lines[line-1].length()-QuoteColumn, lines[QuoteLine-1], path);
-      } else if (c == '\"' || c == '\'' || c == '`') {
-        if (IsEscaped == 1) {
-          Error("Unknown terminator", EscapedCol, line, 0, 2, lines[line-1], path);
-        } else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
+      } else if (c == '\n') Error("Unterminated string", QuoteColumn, QuoteLine, 0, lines[line-1].length()-QuoteColumn, lines[QuoteLine-1], path);
+      else if (c == '\"' || c == '\'' || c == '`') {
+        if (IsEscaped == 1) Error("Unknown terminator", EscapedCol, line, 0, 2, lines[line-1], path);
+        else if ((c == '\"' && QuoteInitiator == '\"') || (c == '\'' && QuoteInitiator == '\'') || (c == '`' && QuoteInitiator == '`')) {
           quote+=QuoteInitiator;
           IsInQuotes = false;
           QuoteInitiator = '\0';
@@ -327,8 +325,13 @@ void Nuclear::Compiler() {
   int ExitCode = 0;
   bool HasExited = false;
   std::vector<std::vector<std::string>> assembly;
-  std::vector<std::string> text, data, global, functions;
-  if (args->getIsLibEnabled()) functions = {"print"};
+  std::vector<std::string> text, data, global;
+  std::vector<Function> functions;
+  if (args->getIsLibEnabled()) {
+    Function print;
+    print.name = "print";
+    functions = {print};
+  }
   global.push_back("format ELF64 executable 3");
   data.push_back("segment readable writable");
   text.push_back("segment readable executable");
@@ -346,18 +349,20 @@ void Nuclear::Compiler() {
       int y=0;
       for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
       if (lines[y][tokens[a].getLine()-1].find("{") != std::string::npos) {
-        if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) Error("Redefinition of function '" + token.getValue() + "'", tokens[a].getColumn(), tokens[a].getLine(), 1, tokens[a].getValue().length(), lines[y][tokens[a].getLine()-1], paths[y]);
-        functions.push_back(token.getValue());
+        for (Function func: functions) if (func.name == token.getValue()) Error("Redefinition of function '" + token.getValue() + "'", tokens[a].getColumn(), tokens[a].getLine(), 1, tokens[a].getValue().length(), lines[y][tokens[a].getLine()-1], paths[y]);
+        Function x;
+        x.name = token.getValue();
+        functions.push_back(x);
         int z=0;
         for (z=0;z<tokens.size();z++) if (tokens[z].getValue() == "}") break;
         tokens.erase(std::next(tokens.begin(), a), std::next(tokens.begin(), z+1));
         continue;
       }
-      if (std::find(functions.begin(), functions.end(), token.getValue()) == functions.end()) {
+      for (Function func: functions) if (func.name != token.getValue()) {
         int y=0;
         for (y;y<paths.size();y++) if (paths[y] == tokens[a].getPath()) break;
         Error("Undefined function", tokens[a].getColumn(), tokens[a].getLine(), 1, tokens[a].getValue().length(), lines[y][tokens[a].getLine()-1], paths[y]);
-      } else if (std::find(functions.begin(), functions.end(), token.getValue()) != functions.end()) {
+      } else {
         if (arguments == -1) {
           int y=0;
           for (y;y<paths.size();y++) if (paths[y] == tokens[a+1].getPath()) break;
