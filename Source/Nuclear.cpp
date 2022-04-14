@@ -77,7 +77,7 @@ void Nuclear::Lexer(std::string path) {
     this->paths.push_back(path);
     this->lines.push_back(lines);
   } else {
-    fprintf(stderr, "Could not open file '%s'!\n", path);
+    fprintf(stderr, "Could not open file '%s'!\n", path.c_str());
     std::exit(-1);
   }
 
