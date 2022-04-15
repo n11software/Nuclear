@@ -12,4 +12,4 @@ Nuclear: $(Objects)
 	@g++ $(Objects) -std=c++2a -o Nuclear
 
 run:
-	@./Nuclear test.nuke Nuked -t -S
+	@./Nuclear test.nuke Nuked -t -r

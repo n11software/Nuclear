@@ -29,7 +29,7 @@ class Arguments {
     int argc;
     char** argv;
     std::string output, input;
-    bool isLibEnabled, showTime, runAfter, outputAssembly;
+    bool isLibEnabled, showTime = false, runAfter = false, outputAssembly = false;
 };
 
 class Token {

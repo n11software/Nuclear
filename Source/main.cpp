@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bits/stdc++.h>
 #include "Nuclear.hpp"
 
 int main(int argc, char **argv) {
