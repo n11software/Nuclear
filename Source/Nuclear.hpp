@@ -3,6 +3,10 @@
 
 #define Version 0.1
 
+/*
+ * Nuclear.hpp - Defines the clases and stuff for Nuclear.cpp
+ */
+
 #include <iostream>
 #include <string>
 #include <vector>
