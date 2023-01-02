@@ -1,1 +1,6 @@
-print("Hello, world!")
+let newFunc = (apple,test(int)) => {
+    for (let i=0;i<100;i++) {
+        print(google)
+    }
+    return 1
+}
